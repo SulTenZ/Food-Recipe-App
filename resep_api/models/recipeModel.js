@@ -1,4 +1,4 @@
-// recipeModel.js
+// resep_api/models/recipeModel.js
 const mongoose = require('mongoose'); // Mengimpor library mongoose untuk berinteraksi dengan MongoDB
 
 // Mendefinisikan skema untuk model resep

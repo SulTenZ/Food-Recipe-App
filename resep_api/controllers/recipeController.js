@@ -1,4 +1,4 @@
-// recipeController.js 
+// resep_api/controllers/recipeController.js
 const Recipe = require('../models/recipeModel'); // Mengimpor model Recipe dari file recipeModel.js
 
 // POST data

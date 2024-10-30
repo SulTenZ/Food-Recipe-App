@@ -1,4 +1,4 @@
-// server.js
+// resep_api/server.js
 const express = require('express'); // Mengimpor library express untuk membuat aplikasi web
 const mongoose = require('mongoose'); // Mengimpor library mongoose untuk berinteraksi dengan MongoDB
 const dotenv = require('dotenv'); // Mengimpor library dotenv untuk mengelola variabel lingkungan
@@ -14,7 +14,7 @@ app.use(express.json()); // Middleware untuk mengurai JSON dari body permintaan
 // Routes
 app.use('/api', recipeRoutes); // Menghubungkan rute resep dengan prefiks '/api'
 
-// Connect to MongoDB
+// Connect ke MongoDB
 mongoose
   .connect(process.env.MONGODB_URI) // Menghubungkan ke MongoDB menggunakan URI dari variabel lingkungan
   .then(() => {

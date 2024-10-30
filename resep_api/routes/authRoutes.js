@@ -1,15 +1,14 @@
-// authRoutes.js
-const express = require('express');
-const { register, verifyOTP, login, verifyLoginOTP } = require('../controllers/authController');
+// resep_api/routes/authRoutes.js
+const express = require('express');  // Mengimpor express untuk membuat router.
+const { register, verifyOTP, login, verifyLoginOTP } = require('../controllers/authController');  // Mengimpor fungsi-fungsi dari authController.
 
-const router = express.Router();
+const router = express.Router();  // Membuat instance router dari express.
 
 // Rute untuk register
-router.post('/register', register);
-router.post('/verify-register', verifyOTP);
+router.post('/register', register);  // Rute POST untuk pendaftaran pengguna baru.
+router.post('/verify-register', verifyOTP);  // Rute POST untuk verifikasi OTP saat registrasi.
 
 // Rute untuk login
-router.post('/login', login);
-router.post('/verify-login', verifyLoginOTP);
+router.post('/login', login);  // Rute POST untuk login pengguna.
 
-module.exports = router;
+module.exports = router;  // Mengekspor router agar dapat digunakan di file utama aplikasi.

@@ -1,4 +1,4 @@
-// recipeRoutes.js
+// resep_api/routes/recipeRoutes.js
 const express = require('express'); // Mengimpor library express untuk membuat rute
 const {
   createRecipe,
