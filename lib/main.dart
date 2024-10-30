@@ -1,99 +1,36 @@
-import 'package:flutter/material.dart';
+// lib/main.dart
+import 'package:flutter/material.dart';  // Mengimpor paket Material untuk desain UI di Flutter.
+import 'package:flutter_application/screens/added_recipe.dart';  // Mengimpor layar untuk resep yang ditambahkan.
+import 'package:flutter_application/screens/create_recipe.dart';  // Mengimpor layar untuk membuat resep.
+import 'screens/login.dart';  // Mengimpor layar login.
+import 'screens/register.dart';  // Mengimpor layar registrasi.
+import 'screens/verify_register.dart';  // Mengimpor layar verifikasi registrasi.
+import 'screens/home.dart';  // Mengimpor layar utama.
 
-void main() => runApp(const MyApp());
-
+void main() {
+  runApp(const MyApp());  // Memanggil aplikasi utama.
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Belajar Flutter',
-      home: MyHomePage(),
-    );
-  }
-}
-
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-
-class _MyHomePageState extends State<MyHomePage> {
-  String inputText = '';
-  int _counter = 0;
-
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Belajar Flutter'),
+    return MaterialApp(
+      title: 'Recipe App',  // Menetapkan judul aplikasi.
+      theme: ThemeData(
+        primarySwatch: Colors.orange,  // Mengatur warna utama aplikasi menjadi oranye.
+        scaffoldBackgroundColor: Colors.white,  // Mengatur warna latar belakang menjadi putih.
       ),
-
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'Masukkan teks :',
-              style: TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 10),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: TextField(
-                onChanged: (text) {
-                  setState(() {
-                    inputText = text;
-                  });
-                },
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Masukkan teks di sini',
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-
-            Text(
-              'Hasil input : $inputText',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 40),
-
-
-            ElevatedButton(
-              onPressed: _incrementCounter,
-              child: const Text('Klik Saya'),
-            ),
-
-            const SizedBox(height: 10),
-
-
-            Text(
-              'Jumlah klik : $_counter',
-              style: const TextStyle(fontSize: 18),
-            ),
-          ],
-        ),
-      ),
+      initialRoute: '/login',  // Menetapkan rute awal aplikasi ke layar login.
+      routes: {
+        '/login': (context) => const LoginScreen(),  // Rute untuk layar login.
+        '/register': (context) => const RegisterScreen(),  // Rute untuk layar registrasi.
+        '/verify-register': (context) => const VerifyRegisterScreen(),  // Rute untuk layar verifikasi registrasi.
+        '/home': (context) => const HomeScreen(),  // Rute untuk layar utama setelah login.
+        '/added-recipes': (context) => const AddedRecipeScreen(),  // Rute untuk layar daftar resep yang telah ditambahkan.
+        '/create-recipe': (context) => const CreateRecipeScreen(),  // Rute untuk layar membuat resep baru.
+      },
     );
   }
 }
