@@ -3,6 +3,7 @@ const User = require('../models/userModel');  // Mengambil model `User` dari fil
 const bcrypt = require('bcrypt');  // Untuk mengenkripsi password dan mencocokkannya saat login.
 const nodemailer = require('nodemailer');  // Mengirimkan email untuk mengirimkan OTP ke pengguna.
 const crypto = require('crypto');  // Menghasilkan kode OTP acak.
+const jwt = require('jsonwebtoken');
 
 const MAX_LOGIN_ATTEMPTS = 3;  // Batas maksimum percobaan login yang salah.
 const BAN_TIME = 10 * 60 * 1000;  // Durasi ban sementara dalam milidetik (10 menit).
@@ -90,6 +91,24 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+// Fungsi generate token JWT
+const generateAuthToken = async (user) => {
+  const token = jwt.sign(
+    { 
+      _id: user._id.toString(), 
+      email: user.email 
+    }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '1h' }
+  );
+
+  // Simpan token ke dalam array tokens user
+  user.tokens = user.tokens.concat({ token });
+  await user.save();
+
+  return token;
+};
+
 // Login
 const login = async (req, res) => {
   try {
@@ -130,17 +149,43 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
+
+
     // Reset loginAttempts dan banExpires jika login berhasil
     user.loginAttempts = 0;
     user.banExpires = null;
     await user.save();
 
+    // Generate token
+    const token = await generateAuthToken(user);
+    
+    console.log(token)
     res.status(200).json({
       status: 'success',
-      message: 'Login successful.'
+      message: 'Login successful.',
+      token: token
     });
   } catch (error) {
     res.status(500).json({ message: error.message });  // Menangani kesalahan dan mengembalikan pesan error.
+  }
+};
+
+// Logout
+const logout = async (req, res) => {
+  try {
+    // Hapus token saat ini dari array tokens
+    req.user.tokens = req.user.tokens.filter((token) => {
+      return token.token !== req.token;
+    });
+
+    await req.user.save();
+
+    res.status(200).json({ 
+      status: 'success', 
+      message: 'Logged out successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -148,5 +193,6 @@ const login = async (req, res) => {
 module.exports = {
   register,
   verifyOTP,
-  login
+  login,
+  logout
 };

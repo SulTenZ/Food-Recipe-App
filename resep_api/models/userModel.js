@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false  // Field OTP tidak wajib diisi.
   },
+  recipe: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"Recipe"
+  },
   isVerified: {
     type: Boolean,
     default: false  // Secara default, akun tidak terverifikasi saat pertama kali dibuat.
@@ -37,6 +41,12 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null  // Waktu kedaluwarsa ban (blokir sementara), secara default null (tidak diblokir).
   },
+  tokens: [{
+    token: {
+      type: String,
+      required: true
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now  // Menyimpan waktu pembuatan user saat dokumen dibuat.

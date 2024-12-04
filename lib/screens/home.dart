@@ -71,6 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       });
     }
+    if (index == 3) {
+      Navigator.pushNamed(context, '/profile');
+    }
   }
 
   @override

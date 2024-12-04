@@ -1,7 +1,9 @@
 // lib/screens/login.dart
 import 'package:flutter/material.dart'; // Import library material untuk UI Flutter
 import 'package:http/http.dart' as http; // Import library HTTP untuk request ke backend
-import 'dart:convert'; // Import library untuk encode dan decode data JSON
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart'; // Import library untuk encode dan decode data JSON
 
 // Membuat StatefulWidget untuk login screen
 class LoginScreen extends StatefulWidget {
@@ -36,6 +38,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         // Jika login berhasil
+        final responseData = json.decode(response.body);
+        final token = responseData['token'];
+
+        // Simpan token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+
         Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman home
       } else {
         final error = json.decode(response.body); // Ambil error message dari response
