@@ -160,6 +160,10 @@ const login = async (req, res) => {
     const token = await generateAuthToken(user);
     
     console.log(token)
+    console.log('Server Key:', process.env.MIDTRANS_SERVER_KEY);
+    console.log('Client Key:', process.env.MIDTRANS_CLIENT_KEY);
+
+
     res.status(200).json({
       status: 'success',
       message: 'Login successful.',

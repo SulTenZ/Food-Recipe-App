@@ -1,52 +1,56 @@
 // lib/screens/home.dart
-import 'package:flutter/material.dart';  // Mengimpor paket material design Flutter.
-import 'added_recipe.dart';  // Mengimpor layar 'AddedRecipeScreen' untuk menampilkan resep yang ditambahkan.
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'added_recipe.dart';
+import 'recipe_detail.dart';
 
-class Recipe {  // Kelas model untuk menyimpan data resep.
+// Model baru berdasarkan struktur data dari DummyJSON
+class Recipe {
+  final int id;
   final String name;
-  final String chef;
-  final double rating;
   final String imageUrl;
+  final double rating;
+  final String chef;
+  final List<String> ingredients;
+  final List<String> instructions;
+  final int prepTime;
+  final int cookTime;
+  final int servings;
+  final String difficulty;
 
   const Recipe({
+    required this.id,
     required this.name,
-    required this.chef,
-    required this.rating,
     required this.imageUrl,
+    required this.rating,
+    this.chef = 'Unknown Chef',
+    this.ingredients = const [],
+    this.instructions = const [],
+    this.prepTime = 0,
+    this.cookTime = 0,
+    this.servings = 0,
+    this.difficulty = '',
   });
+
+  // Factory method untuk membuat objek Recipe dari JSON
+  factory Recipe.fromJson(Map<String, dynamic> json) {
+    return Recipe(
+      id: json['id'],
+      name: json['name'],
+      imageUrl: json['image'],
+      rating: json['rating'].toDouble(),
+      ingredients: List<String>.from(json['ingredients'] ?? []),
+      instructions: List<String>.from(json['instructions'] ?? []),
+      prepTime: json['prepTimeMinutes'] ?? 0,
+      cookTime: json['cookTimeMinutes'] ?? 0,
+      servings: json['servings'] ?? 0,
+      difficulty: json['difficulty'] ?? '',
+    );
+  }
 }
 
-class HomeScreen extends StatefulWidget {  // Stateful widget untuk layar beranda aplikasi.
-  static const List<Recipe> _recipes = [  
-    // Daftar resep yang ditampilkan pada halaman utama (Sementara saya membuat list untuk sekedar tampilan saja,
-    // untuk selanjutnya saya ingin fetch API unofficial dari orang yang saya temukan di github untuk menampilkan
-    // resep-resep masakan yang sudah ada)
-    Recipe(
-      name: 'Nasi Goreng Spesial',
-      chef: 'Chef John',
-      rating: 4.5,
-      imageUrl: 'https://via.placeholder.com/150',
-    ),
-    Recipe(
-      name: 'Soto Ayam',
-      chef: 'Chef Sarah',
-      rating: 4.8,
-      imageUrl: 'https://via.placeholder.com/150',
-    ),
-    Recipe(
-      name: 'Rendang Daging',
-      chef: 'Chef Michael',
-      rating: 4.7,
-      imageUrl: 'https://via.placeholder.com/150',
-    ),
-    Recipe(
-      name: 'Mie Goreng',
-      chef: 'Chef Lisa',
-      rating: 4.3,
-      imageUrl: 'https://via.placeholder.com/150',
-    ),
-  ];
-
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
@@ -54,14 +58,66 @@ class HomeScreen extends StatefulWidget {  // Stateful widget untuk layar berand
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;  // Menyimpan indeks navigasi bawah yang dipilih.
+  int _selectedIndex = 0;
+  List<Recipe> _recipes = [];
+  List<Recipe> _filteredRecipes = [];
+  bool _isLoading = true;
+  TextEditingController _searchController = TextEditingController();
 
-  void _onItemTapped(int index) {  // Fungsi untuk menangani navigasi antar halaman.
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecipes();
+  }
+
+  Future<void> _fetchRecipes() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://dummyjson.com/recipes')
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _recipes = (data['recipes'] as List)
+              .map((recipeJson) => Recipe.fromJson(recipeJson))
+              .toList();
+          _filteredRecipes = _recipes;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat resep'))
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e'))
+      );
+    }
+  }
+
+  void _filterRecipes(String query) {
+    setState(() {
+      _filteredRecipes = _recipes
+          .where((recipe) => 
+            recipe.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
-    if (index == 2) {  // Navigasi ke layar 'AddedRecipeScreen' saat ikon bookmark ditekan.
+    if (index == 2) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const AddedRecipeScreen()),
@@ -79,11 +135,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(  // Memastikan konten tidak berada di bawah area notifikasi perangkat.
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(  // Menampilkan sapaan dan ikon profil.
+            Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
@@ -122,8 +178,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextField(
+                controller: _searchController,
+                onChanged: _filterRecipes,
                 decoration: InputDecoration(
-                  hintText: 'Cari resep',  // Placeholder untuk kolom pencarian.
+                  hintText: 'Cari resep',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: Container(
                     margin: const EdgeInsets.all(8),
@@ -158,25 +216,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Recipe grid
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.8,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: HomeScreen._recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = HomeScreen._recipes[index];
-                  return RecipeCard(recipe: recipe);
-                },
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredRecipes.isEmpty
+                      ? const Center(child: Text('Resep tidak ditemukan'))
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.8,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                          itemCount: _filteredRecipes.length,
+                          itemBuilder: (context, index) {
+                            final recipe = _filteredRecipes[index];
+                            return RecipeCard(recipe: recipe);
+                          },
+                        ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(  // Bar navigasi bawah dengan ikon untuk halaman berbeda.
+      bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.orange,
@@ -205,8 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
-class RecipeCard extends StatelessWidget {  // Kartu untuk menampilkan informasi tiap resep.
+class RecipeCard extends StatelessWidget {
   final Recipe recipe;
 
   const RecipeCard({
@@ -216,95 +277,112 @@ class RecipeCard extends StatelessWidget {  // Kartu untuk menampilkan informasi
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(  // Menampilkan gambar resep di bagian atas kartu.
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Stack(
-              children: [
-                Image.network(
-                  recipe.imageUrl,
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                Positioned(  // Posisi rating di kanan atas gambar.
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          recipe.rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecipeDetailScreen(recipe: recipe),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  recipe.name,  // Menampilkan nama resep.
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              child: Stack(
+                children: [
+                  Image.network(
+                    recipe.imageUrl,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 150,
+                        color: Colors.grey[300],
+                        child: const Center(child: Icon(Icons.image_not_supported)),
+                      );
+                    },
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(  // Menampilkan nama koki di bawah nama resep.
-                  children: [
-                    const Icon(
-                      Icons.person,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'By ${recipe.chef}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            recipe.rating.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.person,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'By ${recipe.chef}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -47,6 +47,14 @@ const userSchema = new mongoose.Schema({
       required: true
     }
   }],
+  orderTokens: [{
+    token: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+  isPremium: {
+    type: Boolean,
+    default: false // Secara default, pengguna bukan premium
+  },
   createdAt: {
     type: Date,
     default: Date.now  // Menyimpan waktu pembuatan user saat dokumen dibuat.

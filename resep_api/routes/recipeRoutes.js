@@ -7,6 +7,7 @@ const {
   updateRecipe,
   deleteRecipe,
 } = require('../controllers/recipeController'); // Mengimpor fungsi-fungsi controller resep
+const { isPremium } = require('../middlewares/premiumMiddleware'); // Mengimpor middleware
 
 const router = express.Router(); // Membuat instance router dari express
 
