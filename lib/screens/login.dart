@@ -3,7 +3,7 @@ import 'package:flutter/material.dart'; // Import library material untuk UI Flut
 import 'package:http/http.dart' as http; // Import library HTTP untuk request ke backend
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart'; // Import library untuk encode dan decode data JSON
+import '../services/shared.dart'; // Import file shared.dart untuk menyimpan token
 
 // Membuat StatefulWidget untuk login screen
 class LoginScreen extends StatefulWidget {
@@ -41,9 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
         final responseData = json.decode(response.body);
         final token = responseData['token'];
 
-        // Simpan token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token);
+        // Simpan token menggunakan fungsi saveToken
+        await saveToken(token);
 
         Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman home
       } else {

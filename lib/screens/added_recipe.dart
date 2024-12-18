@@ -1,5 +1,6 @@
 // lib/screens/added_recipe.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_application/services/shared.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'create_recipe.dart';
@@ -28,27 +29,34 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
 
   // Fungsi untuk mengambil resep dari API
   Future<void> _fetchRecipes() async {
+    final token = await getToken();
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No token found. Please login again.')),
+      );
+      return;
+    }
+
     try {
-      // Melakukan permintaan GET untuk mengambil resep
       final response = await http.get(
         Uri.parse('http://10.0.2.2:5000/api/recipes'),
         headers: {
-          'Authorization': 'Bearer your-token-here',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
 
       if (response.statusCode == 200) {
-        // Jika permintaan berhasil, perbarui state dengan resep yang diambil
+      final List<dynamic> recipes = json.decode(response.body);
+        // Filter resep berdasarkan ID pengguna
         setState(() {
-          _recipes = json.decode(response.body); // Mengubah JSON ke List
-          _isLoading = false; // Mengubah status loading
+          _recipes = recipes;
+          _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load recipes'); // Menangani kesalahan jika permintaan gagal
+        throw Exception('Failed to load recipes');
       }
     } catch (e) {
-      // Menangani kesalahan dan menampilkan pesan
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
@@ -58,11 +66,13 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
 
   // Fungsi untuk menghapus resep
   Future<void> _deleteRecipe(String recipeId) async {
+    final token = await getToken();
     try {
       final response = await http.delete(
         Uri.parse('http://10.0.2.2:5000/api/recipes/$recipeId'),
         headers: {
-          'Authorization': 'Bearer your-token-here', // Login belum disempurnakan, belum ada JWT
+          'Authorization':
+              'Bearer $token', // Login belum disempurnakan, belum ada JWT
           'Content-Type': 'application/json',
         },
       );
@@ -115,11 +125,12 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
         centerTitle: true,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator()) // Tampilkan indikator loading
+          ? const Center(
+              child: CircularProgressIndicator()) // Tampilkan indikator loading
           : _recipes.isEmpty
               ? Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center ,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
                         'Belum ada resep yang ditambahkan', // Pesan jika tidak ada resep
@@ -133,7 +144,8 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                             builder: (context) => const CreateRecipeScreen(),
                           ),
                         ),
-                        child: const Text('Tambah Resep Sekarang'), // Tombol untuk menambah resep
+                        child: const Text(
+                            'Tambah Resep Sekarang'), // Tombol untuk menambah resep
                       ),
                     ],
                   ),
@@ -142,14 +154,18 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                   padding: const EdgeInsets.all(16), // Padding untuk ListView
                   itemCount: _recipes.length, // Jumlah item dalam ListView
                   itemBuilder: (context, index) {
-                    final recipe = _recipes[index]; // Mengambil resep berdasarkan index
+                    final recipe =
+                        _recipes[index]; // Mengambil resep berdasarkan index
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 16), // Margin di bawah kartu
+                      margin: const EdgeInsets.only(
+                          bottom: 16), // Margin di bawah kartu
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12), // Membulatkan sudut
+                        borderRadius:
+                            BorderRadius.circular(12), // Membulatkan sudut
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.all(16), // Padding di dalam ListTile
+                        contentPadding: const EdgeInsets.all(
+                            16), // Padding di dalam ListTile
                         title: Text(
                           recipe['name'], // Menampilkan nama resep
                           style: const TextStyle(
@@ -164,7 +180,8 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                             Text(
                               'Bahan: ${recipe['ingredients'].join(", ")}', // Menampilkan bahan
                               maxLines: 2,
-                              overflow: TextOverflow.ellipsis, // Mengatur overflow teks
+                              overflow: TextOverflow
+                                  .ellipsis, // Mengatur overflow teks
                             ),
                           ],
                         ),
@@ -175,14 +192,17 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                             MaterialPageRoute(
                               builder: (context) => AddedRecipeDetailScreen(
                                 recipeName: recipe['name'], // Nama resep
-                                ingredients: List<String>.from(recipe['ingredients']), // Bahan resep
-                                instructions: recipe['instructions'] ?? 'Tidak ada instruksi', // Instruksi resep
+                                ingredients: List<String>.from(
+                                    recipe['ingredients']), // Bahan resep
+                                instructions: recipe['instructions'] ??
+                                    'Tidak ada instruksi', // Instruksi resep
                               ),
                             ),
                           );
                         },
                         trailing: Row(
-                          mainAxisSize: MainAxisSize.min, // Ukuran minimum baris
+                          mainAxisSize:
+                              MainAxisSize.min, // Ukuran minimum baris
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit), // Tombol edit
@@ -194,15 +214,19 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                                     builder: (context) => EditRecipeScreen(
                                       recipeId: recipe['_id'], // ID resep
                                       currentName: recipe['name'], // Nama resep
-                                      currentIngredients: List<String>.from(recipe['ingredients']), // Bahan resep
-                                      currentInstructions: recipe['instructions'] ?? 'Tidak ada instruksi', // Instruksi resep
+                                      currentIngredients: List<String>.from(
+                                          recipe['ingredients']), // Bahan resep
+                                      currentInstructions: recipe[
+                                              'instructions'] ??
+                                          'Tidak ada instruksi', // Instruksi resep
                                     ),
                                   ),
                                 );
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.delete_outline), // Tombol hapus
+                              icon: const Icon(
+                                  Icons.delete_outline), // Tombol hapus
                               onPressed: () async {
                                 // Panggil fungsi penghapusan resep
                                 await _deleteRecipe(recipe['_id']);
@@ -220,10 +244,12 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
           context,
           MaterialPageRoute(builder: (context) => const CreateRecipeScreen()),
         ),
-        child: const Icon(Icons.add, color: Colors.white), // Ikon untuk tombol tambah
+        child: const Icon(Icons.add,
+            color: Colors.white), // Ikon untuk tombol tambah
         backgroundColor: Colors.orange,
       ),
-      bottomNavigationBar: BottomNavigationBar( // Bar navigasi bawah dengan ikon untuk halaman berbeda
+      bottomNavigationBar: BottomNavigationBar(
+        // Bar navigasi bawah dengan ikon untuk halaman berbeda
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex, // Indeks item yang dipilih
         selectedItemColor: Colors.orange, // Warna item terpilih

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../services/shared.dart';
+
 class CreateRecipeScreen extends StatefulWidget {
   const CreateRecipeScreen({super.key});
 
@@ -28,13 +30,13 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true); // Mengaktifkan indikator loading
-
+    final token = await getToken();
     try {
       // Membuat permintaan POST ke server untuk menambahkan resep baru
       final response = await http.post(
         Uri.parse('http://10.0.2.2:5000/api/recipes'),
         headers: {
-          'Authorization': 'Bearer your-token-here', // Token otorisasi
+          'Authorization': 'Bearer $token', // Token otorisasi
           'Content-Type': 'application/json',
         },
         body: json.encode({

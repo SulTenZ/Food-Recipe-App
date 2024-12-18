@@ -27,6 +27,11 @@ const recipeSchema = new mongoose.Schema({
   createdAt: { 
     type: Date, // Tipe data untuk tanggal pembuatan
     default: Date.now // Mengatur nilai default ke waktu saat ini
+  },
+  user: { // Menambahkan field user
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User ',
+    required: true // Field ini wajib diisi
   }
 });
 

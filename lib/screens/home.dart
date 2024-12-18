@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/shared.dart';
 import 'added_recipe.dart';
 import 'recipe_detail.dart';
 
@@ -71,9 +72,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchRecipes() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
+      // Ambil token dari SharedPreferences
+      final token = await getToken();
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Token tidak ditemukan. Harap login kembali.')),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      // Request API dengan header Authorization
       final response = await http.get(
-        Uri.parse('https://dummyjson.com/recipes')
+        Uri.parse('https://dummyjson.com/recipes'),
+        headers: {
+          'Authorization': 'Bearer $token', // Kirim token sebagai Bearer Token
+        },
       );
 
       if (response.statusCode == 200) {
@@ -90,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat resep'))
+          SnackBar(content: Text('Gagal memuat resep: ${response.statusCode}')),
         );
       }
     } catch (e) {
@@ -98,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e'))
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
       );
     }
   }

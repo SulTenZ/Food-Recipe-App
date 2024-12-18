@@ -193,10 +193,26 @@ const logout = async (req, res) => {
   }
 };
 
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select(
+      "name email phone isVerified createdAt",
+    );
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Mengekspor fungsi untuk digunakan di tempat lain
 module.exports = {
   register,
   verifyOTP,
   login,
-  logout
+  logout,
+  getUserProfile
 };

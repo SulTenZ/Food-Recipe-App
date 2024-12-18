@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/shared.dart'; // Pastikan impor shared.dart sudah benar
 import 'added_recipe.dart'; // Pastikan Anda mengimpor halaman AddedRecipeScreen jika belum
 
 class ProfileScreen extends StatefulWidget {
@@ -25,8 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Fungsi untuk mengambil data profil pengguna
   Future<void> _fetchUserProfile() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await getToken();
 
       if (token == null) {
         // Redirect ke halaman login jika tidak ada token
@@ -63,12 +63,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Fungsi untuk logout
   Future<void> _logout() async {
-    setState(() {
-    });
-
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await getToken();
 
       if (token == null) {
         Navigator.pushReplacementNamed(context, '/login');
@@ -85,7 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200) {
         // Hapus token dari SharedPreferences
-        await prefs.remove('token');
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('authToken');
 
         // Redirect ke halaman login
         Navigator.pushNamedAndRemoveUntil(
@@ -103,9 +100,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Terjadi kesalahan koneksi')),
       );
-    } finally {
-      setState(() {
-      });
     }
   }
 
