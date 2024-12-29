@@ -1,11 +1,10 @@
 // lib/screens/login.dart
-import 'package:flutter/material.dart'; // Import library material untuk UI Flutter
-import 'package:http/http.dart' as http; // Import library HTTP untuk request ke backend
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../services/shared.dart'; // Import file shared.dart untuk menyimpan token
+import '../services/shared.dart';
 
-// Membuat StatefulWidget untuk login screen
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,50 +13,43 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Key untuk form validation
-  final _emailController = TextEditingController(); // Controller untuk input email
-  final _passwordController = TextEditingController(); // Controller untuk input password
-  bool _isLoading = false; // Status loading untuk button login
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
-  // Fungsi login async yang kirim request ke API login
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return; // Validasi form
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true); // Set status loading ke true
+    setState(() => _isLoading = true);
 
     try {
-      // Mengirim POST request ke endpoint login
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/login'), // URL endpoint
-        headers: {'Content-Type': 'application/json'}, // Headers request
+        Uri.parse('http://10.0.2.2:5000/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'email': _emailController.text, // Isi data email dari input
-          'password': _passwordController.text, // Isi data password dari input
+          'email': _emailController.text,
+          'password': _passwordController.text,
         }),
       );
 
       if (response.statusCode == 200) {
-        // Jika login berhasil
         final responseData = json.decode(response.body);
         final token = responseData['token'];
-
-        // Simpan token menggunakan fungsi saveToken
         await saveToken(token);
-
-        Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman home
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
-        final error = json.decode(response.body); // Ambil error message dari response
+        final error = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error['message'])), // Show error message
+          SnackBar(content: Text(error['message'])),
         );
       }
     } catch (e) {
-      // Jika ada error koneksi
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Terjadi kesalahan koneksi')),
       );
     } finally {
-      setState(() => _isLoading = false); // Set loading status ke false
+      setState(() => _isLoading = false);
     }
   }
 
@@ -66,13 +58,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20.0), // Padding di sekitar elemen UI
+          padding: const EdgeInsets.all(20.0),
           child: Form(
-            key: _formKey, // Set form key untuk validasi
+            key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // Membuat kolom menempati full lebar
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40), // Space vertikal kosong
+                const SizedBox(height: 40),
                 const Text(
                   'Halo,',
                   style: TextStyle(
@@ -84,90 +76,93 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Selamat datang!',
                   style: TextStyle(fontSize: 16),
                 ),
-                const SizedBox(height: 40), // Space vertikal kosong
+                const SizedBox(height: 40),
                 TextFormField(
-                  controller: _emailController, // Set controller untuk email
+                  controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: 'Email', // Label input
-                    labelStyle: const TextStyle(color: Colors.black), // Style label
-                    border: const OutlineInputBorder(), // Border default
+                    labelText: 'Email',
+                    labelStyle: const TextStyle(color: Colors.black),
+                    border: const OutlineInputBorder(),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.orange, width: 2), // Border saat fokus
-                      borderRadius: BorderRadius.circular(12), // Radius border
+                      borderSide: const BorderSide(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.orange, width: 2), // Border saat tidak fokus
-                      borderRadius: BorderRadius.circular(12), // Radius border
+                      borderSide: const BorderSide(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Masukkan email Anda'; // Pesan validasi jika kosong
+                      return 'Masukkan email Anda';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 20), // Space vertikal kosong
+                const SizedBox(height: 20),
                 TextFormField(
-                  controller: _passwordController, // Set controller untuk password
+                  controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Password', // Label input
-                    labelStyle: const TextStyle(color: Colors.black), // Style label
-                    border: const OutlineInputBorder(), // Border default
+                    labelText: 'Password',
+                    labelStyle: const TextStyle(color: Colors.black),
+                    border: const OutlineInputBorder(),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.orange, width: 2), // Border saat fokus
-                      borderRadius: BorderRadius.circular(12), // Radius border
+                      borderSide: const BorderSide(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.orange, width: 2), // Border saat tidak fokus
-                      borderRadius: BorderRadius.circular(12), // Radius border
+                      borderSide: const BorderSide(color: Colors.orange, width: 2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  obscureText: true, // Mengatur input jadi karakter bintang untuk password
+                  obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Masukkan password Anda'; // Pesan validasi jika kosong
+                      return 'Masukkan password Anda';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 10), // Space vertikal kosong
-                TextButton(
-                  onPressed: () {
-                    // Implementasi fitur lupa password
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.orange, // Warna teks
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot-password');
+                    },
+                    child: const Text(
+                      'Lupa Password?',
+                      style: TextStyle(color: Colors.orange),
+                    ),
                   ),
-                  child: const Text('Lupa Password?'), // Teks button
                 ),
-                const SizedBox(height: 20), // Space vertikal kosong
+                const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _login, // Jika loading, onPressed null
+                  onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange, // Warna background button
-                    padding: const EdgeInsets.symmetric(vertical: 15), // Padding dalam button
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator() // Indicator loading
+                      ? const CircularProgressIndicator()
                       : const Text(
                           'Sign In',
-                          style: TextStyle(color: Colors.black), // Teks button saat tidak loading
+                          style: TextStyle(color: Colors.black),
                         ),
                 ),
-                const SizedBox(height: 20), // Space vertikal kosong
+                const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center, // Posisikan di tengah secara horizontal
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Belum punya akun?'), // Teks ajakan daftar
+                    const Text('Belum punya akun?'),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/register'); // Pindah ke halaman register
+                        Navigator.pushNamed(context, '/register');
                       },
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.orange, // Warna teks button
+                        foregroundColor: Colors.orange,
                       ),
-                      child: const Text('Daftar sekarang'), // Teks button
+                      child: const Text('Daftar'),
                     ),
                   ],
                 ),

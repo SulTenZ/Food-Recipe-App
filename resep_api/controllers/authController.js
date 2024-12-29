@@ -174,6 +174,80 @@ const login = async (req, res) => {
   }
 };
 
+// Forgot Password
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Cari pengguna berdasarkan email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate OTP yang lebih kompleks
+    const otp = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const otpExpires = Date.now() + 15 * 60 * 1000; // OTP berlaku 15 menit
+
+    // Update user dengan OTP dan waktu kedaluwarsa
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Kirim email dengan OTP
+    await sendOTPEmail(email, otp);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password reset OTP has been sent to your email.',
+    });
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    res.status(500).json({ message: 'Server error during password reset process' });
+  }
+};
+
+// Reset Password
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    // Cari pengguna berdasarkan email
+    const user = await User.findOne({ 
+      email,
+      otp,
+      otpExpires: { $gt: Date.now() } // Periksa apakah OTP masih berlaku
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'Invalid or expired OTP. Please request a new OTP.' 
+      });
+    }
+
+    // Validasi kekuatan password (contoh sederhana)
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        message: 'Password must be at least 8 characters long' 
+      });
+    }
+
+    // Update password
+    user.password = newPassword; // Akan di-hash oleh middleware pre-save
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password has been reset successfully.',
+    });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    res.status(500).json({ message: 'Server error during password reset' });
+  }
+};
+
 // Logout
 const logout = async (req, res) => {
   try {
@@ -196,7 +270,7 @@ const logout = async (req, res) => {
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
-      "name email phone isVerified createdAt",
+      "username email phone isVerified createdAt",
     );
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -204,9 +278,39 @@ const getUserProfile = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     console.error("Error fetching user profile:", error);
-    res.status(500).json({ message: "Server error" });
-  }
+    res.status(500).json({ message: "Server error" });
+  }
 };
+
+// Delete Account
+const deleteUser = async (req, res) => {
+  const {id} = req.params;
+  try {
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+      
+    }
+    res.status(200).json({message: "User berhasil dihapus" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error"});
+  }
+
+}
+
+// GetAllUsers
+const GetAllUsers = async (req,res) => {
+  try {
+    const user = await User.find({});
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error"});
+    console.error('error mengambil data user:', error);
+  }
+}
 
 // Mengekspor fungsi untuk digunakan di tempat lain
 module.exports = {
@@ -214,5 +318,9 @@ module.exports = {
   verifyOTP,
   login,
   logout,
-  getUserProfile
+  getUserProfile,
+  forgotPassword,
+  resetPassword,
+  deleteUser,
+  GetAllUsers
 };

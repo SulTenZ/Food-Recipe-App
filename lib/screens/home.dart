@@ -6,7 +6,7 @@ import '../services/shared.dart';
 import 'added_recipe.dart';
 import 'recipe_detail.dart';
 
-// Model baru berdasarkan struktur data dari DummyJSON
+// Model untuk data resep
 class Recipe {
   final int id;
   final String name;
@@ -34,7 +34,6 @@ class Recipe {
     this.difficulty = '',
   });
 
-  // Factory method untuk membuat objek Recipe dari JSON
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
@@ -64,20 +63,53 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Recipe> _filteredRecipes = [];
   bool _isLoading = true;
   TextEditingController _searchController = TextEditingController();
+  String _username = "Guest";
 
   @override
   void initState() {
     super.initState();
     _fetchRecipes();
+    _fetchUserProfile();
+  }
+
+  Future<void> _fetchUserProfile() async {
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/auth/user-profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        setState(() {
+          _username = userData['username'];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat profil')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
   }
 
   Future<void> _fetchRecipes() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Ambil token dari SharedPreferences
       final token = await getToken();
 
       if (token == null) {
@@ -88,11 +120,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Request API dengan header Authorization
       final response = await http.get(
         Uri.parse('https://dummyjson.com/recipes'),
         headers: {
-          'Authorization': 'Bearer $token', // Kirim token sebagai Bearer Token
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -106,179 +137,244 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = false;
         });
       } else {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat resep: ${response.statusCode}')),
-        );
+        _showErrorSnackBar('Gagal memuat resep: ${response.statusCode}');
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
-      );
+      _showErrorSnackBar('Terjadi kesalahan: $e');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   void _filterRecipes(String query) {
     setState(() {
       _filteredRecipes = _recipes
-          .where((recipe) => 
-            recipe.name.toLowerCase().contains(query.toLowerCase()))
+          .where((recipe) =>
+              recipe.name.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
 
-    if (index == 2) {
+    if (index == 1) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const AddedRecipeScreen()),
-      ).then((_) {
-        setState(() {
-          _selectedIndex = 0;
-        });
-      });
-    }
-    if (index == 3) {
+      ).then((_) => setState(() => _selectedIndex = 0));
+    } else if (index == 2) {
       Navigator.pushNamed(context, '/profile');
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Halo,',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Mau masak apa hari ini?',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  CircleAvatar(
-                    backgroundColor: Colors.orange[100],
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.orange,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _filterRecipes,
-                decoration: InputDecoration(
-                  hintText: 'Cari resep',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.tune,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.orange, width: 2),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.orange, width: 2),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Recipe grid
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredRecipes.isEmpty
-                      ? const Center(child: Text('Resep tidak ditemukan'))
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.8,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                          itemCount: _filteredRecipes.length,
-                          itemBuilder: (context, index) {
-                            final recipe = _filteredRecipes[index];
-                            return RecipeCard(recipe: recipe);
-                          },
-                        ),
-            ),
-          ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              _buildSearchBar(),
+              const SizedBox(height: 20),
+              _buildRecipeGrid(),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Halo, $_username! 👋',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.brown,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Mau masak apa hari ini?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.brown.shade400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.orange.shade100,
+              child: Icon(
+                Icons.person,
+                size: 32,
+                color: Colors.orange.shade800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: _filterRecipes,
+        decoration: InputDecoration(
+          hintText: 'Cari resep favoritmu',
+          hintStyle: TextStyle(color: Colors.grey.shade400),
+          prefixIcon: Icon(Icons.search, color: Colors.orange.shade400),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.orange.shade300, width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipeGrid() {
+    if (_isLoading) {
+      return Expanded(
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
+          ),
+        ),
+      );
+    } else if (_filteredRecipes.isEmpty) {
+      return const Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'Resep tidak ditemukan',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return Expanded(
+      child: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.75,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: _filteredRecipes.length,
+        itemBuilder: (context, index) {
+          final recipe = _filteredRecipes[index];
+          return RecipeCard(recipe: recipe);
+        },
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        elevation: 0,
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.orange.shade800,
+        unselectedItemColor: Colors.grey.shade400,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
         onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorite',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark),
+            icon: Icon(Icons.bookmark_rounded),
             label: 'Saved',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],
@@ -306,28 +402,39 @@ class RecipeCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
                   Image.network(
                     recipe.imageUrl,
-                    height: 150,
+                    height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: 150,
-                        color: Colors.grey[300],
-                        child: const Center(child: Icon(Icons.image_not_supported)),
+                        height: 160,
+                        color: Colors.grey.shade200,
+                        child: Icon(
+                          Icons.image_not_supported_rounded,
+                          color: Colors.grey.shade400,
+                          size: 32,
+                        ),
                       );
                     },
                   ),
@@ -340,23 +447,24 @@ class RecipeCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.star,
+                            Icons.star_rounded,
                             color: Colors.amber,
-                            size: 16,
+                            size: 18,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             recipe.rating.toString(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -376,24 +484,29 @@ class RecipeCard extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: Colors.brown,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.person,
+                      Icon(
+                        Icons.person_rounded,
                         size: 16,
-                        color: Colors.grey,
+                        color: Colors.orange.shade300,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        'By ${recipe.chef}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+                      Expanded(
+                        child: Text(
+                          'By ${recipe.chef}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

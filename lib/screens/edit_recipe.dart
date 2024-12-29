@@ -1,5 +1,6 @@
 // lib/screens/edit_recipe.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_application/services/shared.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -46,11 +47,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     setState(() => _isLoading = true); // Tampilkan loading
 
     try {
+      final token = await getToken();
       // Mengirim permintaan PUT untuk memperbarui resep di server
       final response = await http.put(
         Uri.parse('http://10.0.2.2:5000/api/recipes/${widget.recipeId}'),
         headers: {
-          'Authorization': 'Bearer your-token-here', // Token otorisasi
+          'Authorization': 'Bearer $token', // Token otorisasi
           'Content-Type': 'application/json',
         },
         body: json.encode({

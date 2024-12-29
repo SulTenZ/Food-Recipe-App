@@ -1,9 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/shared.dart'; // Pastikan impor shared.dart sudah benar
-import 'added_recipe.dart'; // Pastikan Anda mengimpor halaman AddedRecipeScreen jika belum
+import '../services/shared.dart';
+import 'added_recipe.dart';
+import 'home.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -15,27 +17,27 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String _username = '';
   String _email = '';
-  int _selectedIndex = 3; // Set index ke 3 untuk halaman profil
+  int _selectedIndex = 2;
+  List<dynamic> _userList = [];
 
   @override
   void initState() {
     super.initState();
     _fetchUserProfile();
+    _fetchAllUsers();
   }
 
-  // Fungsi untuk mengambil data profil pengguna
   Future<void> _fetchUserProfile() async {
     try {
       final token = await getToken();
 
       if (token == null) {
-        // Redirect ke halaman login jika tidak ada token
         Navigator.pushReplacementNamed(context, '/login');
         return;
       }
 
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5000/api/user/profile'),
+        Uri.parse('http://10.0.2.2:5000/api/auth/user-profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -49,9 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _email = userData['email'];
         });
       } else {
-        // Handle error
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat profil')),
+          const SnackBar(content: Text('Gagal memuat profil')),
         );
       }
     } catch (e) {
@@ -61,7 +62,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Fungsi untuk logout
+  Future<void> _fetchAllUsers() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/auth/user-list'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _userList = json.decode(response.body);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat daftar pengguna')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan: $e')),
+      );
+    }
+  }
+
+  Future<void> _deleteUser(String userId) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse('http://10.0.2.2:5000/api/auth/delete-user/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        _fetchAllUsers();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pengguna berhasil dihapus')),
+        );
+      } else {
+        final error = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error['message'] ?? 'Gagal menghapus pengguna')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan koneksi')),
+      );
+    }
+  }
+
   Future<void> _logout() async {
     try {
       final token = await getToken();
@@ -80,16 +146,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Hapus token dari SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('authToken');
 
-        // Redirect ke halaman login
         Navigator.pushNamedAndRemoveUntil(
-          context, 
-          '/login', 
-          (Route<dynamic> route) => false
-        );
+            context, '/login', (Route<dynamic> route) => false);
       } else {
         final error = json.decode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,12 +159,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan koneksi')),
+        const SnackBar(content: Text('Terjadi kesalahan koneksi')),
       );
     }
   }
 
-  // Fungsi untuk menangani navigasi antar halaman
+  Future<void> _deleteAccount() async {
+    try {
+      final token = await getToken();
+
+      if (token == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.delete(
+        Uri.parse('http://10.0.2.2:5000/api/user/delete'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('authToken');
+
+        Navigator.pushNamedAndRemoveUntil(
+            context, '/login', (Route<dynamic> route) => false);
+      } else {
+        final error = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error['message'] ?? 'Gagal menghapus akun')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan koneksi')),
+      );
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -111,23 +207,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
         break;
       case 1:
-        // Navigasi ke halaman favorit (jika ada)
-        break;
-      case 2:
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const AddedRecipeScreen()),
-        ).then((_) {
-          setState(() {
-            _selectedIndex = 3;
-          });
-        });
+        );
         break;
-      case 3:
-        // Sudah di halaman profil
+      case 2:
         break;
     }
   }
@@ -135,91 +226,239 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.orange[100],
-                child: Icon(
-                  Icons.person,
-                  color: Colors.orange,
-                  size: 60,
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 24),
+                        _buildAccountInformation(),
+                        const SizedBox(height: 16),
+                        _buildProfileOptions(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                _username,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                _email,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-              SizedBox(height: 40),
-              _buildProfileMenuItem(
-                icon: Icons.person_outline,
-                title: 'Edit Profil',
-                onTap: () {
-                  // Implementasi edit profil
-                },
-              ),
-              _buildProfileMenuItem(
-                icon: Icons.settings_outlined,
-                title: 'Pengaturan',
-                onTap: () {
-                  // Implementasi halaman pengaturan
-                },
-              ),
-              _buildProfileMenuItem(
-                icon: Icons.help_outline,
-                title: 'Bantuan',
-                onTap: () {
-                  // Implementasi halaman bantuan
-                },
-              ),
-              SizedBox(height: 20),
-              _buildProfileMenuItem(
-                icon: Icons.logout,
-                title: 'Logout',
-                onTap: _logout,
-                isLogout: true,
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.orange,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Profile',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.brown,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Manage your account',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.brown.shade400,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorite',
+          IconButton(
+            icon: Icon(
+              Icons.group_rounded,
+              color: Colors.orange.shade800,
+              size: 28,
+            ),
+            onPressed: _showUserListBottomSheet,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark),
-            label: 'Saved',
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountInformation() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.orange.shade100,
+              child: Icon(
+                Icons.person_rounded,
+                size: 50,
+                color: Colors.orange.shade800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _username,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.brown,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _email,
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.brown.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          _buildInfoItem(
+            icon: Icons.person_outline_rounded,
+            title: 'Username',
+            value: _username,
+          ),
+          const Divider(height: 1),
+          _buildInfoItem(
+            icon: Icons.email_outlined,
+            title: 'Email',
+            value: _email,
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.orange.shade800,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.brown,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileOptions() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildProfileMenuItem(
+            icon: Icons.delete_outline_rounded,
+            title: 'Delete Account',
+            onTap: _deleteAccount,
+            showDivider: true,
+          ),
+          _buildProfileMenuItem(
+            icon: Icons.logout_rounded,
+            title: 'Logout',
+            onTap: _logout,
+            isLogout: true,
+            showDivider: false,
           ),
         ],
       ),
@@ -231,24 +470,167 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     required VoidCallback onTap,
     bool isLogout = false,
+    bool showDivider = true,
   }) {
-    return ListTile(
-      leading: Icon(
-        icon, 
-        color: isLogout ? Colors.red : Colors.orange
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16, 
-          color: isLogout ? Colors.red : Colors.black
+    final color = isLogout ? Colors.red : Colors.brown;
+    
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isLogout ? Colors.red.shade50 : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: isLogout ? Colors.red : Colors.orange.shade800,
+              size: 20,
+            ),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: color.withOpacity(0.5),
+          ),
+          onTap: onTap,
         ),
+        if (showDivider) const Divider(height: 1),
+      ],
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      trailing: Icon(
-        Icons.chevron_right, 
-        color: isLogout ? Colors.red : Colors.grey
+      child: BottomNavigationBar(
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        backgroundColor: Colors.white,
+        selectedItemColor: Colors.orange.shade800,
+        unselectedItemColor: Colors.grey.shade400,
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_rounded),
+            label: 'Saved',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
       ),
-      onTap: onTap,
+    );
+  }
+
+  void _showUserListBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'User List',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.brown.shade800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _userList.length,
+                  itemBuilder: (context, index) {
+                    final user = _userList[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.orange.shade100,
+                          child: Text(
+                            user['username'][0].toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.orange.shade800,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          user['username'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.brown,
+                          ),
+                        ),
+                        subtitle: Text(
+                          user['email'],
+                          style: TextStyle(color: Colors.brown.shade400),
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(
+                            Icons.delete_rounded,
+                            color: Colors.red.shade400,
+                          ),
+                          onPressed: () => _deleteUser(user['_id']),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

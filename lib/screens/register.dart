@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate() || !_acceptTerms) { // Validasi form dan checkbox
       if (!_acceptTerms) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please accept terms and conditions')), // Show pesan error jika checkbox tidak dicentang
+          const SnackBar(content: Text('Terima syarat & ketentuan')), // Show pesan error jika checkbox tidak dicentang
         );
       }
       return;
@@ -104,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) { // Validator untuk nama
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name'; // Pesan jika nama kosong
+                      return 'Masukkan nama Anda'; // Pesan jika nama kosong
                     }
                     return null;
                   },
@@ -127,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) { // Validator untuk email
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email'; // Pesan jika email kosong
+                      return 'Masukkan email Anda'; // Pesan jika email kosong
                     }
                     return null;
                   },
@@ -151,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: true, // Buat input jadi bintang untuk password
                   validator: (value) { // Validator untuk password
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password'; // Pesan jika password kosong
+                      return 'Masukkan password Anda'; // Pesan jika password kosong
                     }
                     return null;
                   },

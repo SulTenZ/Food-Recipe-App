@@ -1,11 +1,9 @@
-// lib/screens/added_recipe_detail.dart
 import 'package:flutter/material.dart';
 
 class AddedRecipeDetailScreen extends StatelessWidget {
-  // Parameter yang diperlukan untuk menampilkan detail resep
-  final String recipeName; // Nama resep
-  final List<String> ingredients; // Daftar bahan resep
-  final String instructions; // Instruksi pembuatan
+  final String recipeName;
+  final List<String> ingredients;
+  final String instructions;
 
   const AddedRecipeDetailScreen({
     Key? key,
@@ -18,33 +16,110 @@ class AddedRecipeDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(recipeName), // Menampilkan nama resep sebagai judul
-        backgroundColor: Colors.orange, // Warna latar belakang AppBar
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Judul bagian bahan
-            Text(
-              'Bahan',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8), // Spasi antar elemen
-            // Menampilkan daftar bahan sebagai satu teks
-            Text(ingredients.join(", "), style: TextStyle(fontSize: 16)),
-            SizedBox(height: 16), // Spasi antara bagian bahan dan instruksi
-            // Judul bagian instruksi
-            Text(
-              'Instruksi',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            // Menampilkan instruksi sebagai teks
-            Text(instructions, style: TextStyle(fontSize: 16)),
-          ],
+        title: Text(
+          recipeName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: Colors.white,
+          ),
         ),
+        backgroundColor: Colors.orange.shade400,
+        elevation: 0,
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSection(
+                title: 'Bahan',
+                children: ingredients.map((ingredient) => _buildIngredient(ingredient)).toList(),
+              ),
+              const SizedBox(height: 20),
+              _buildSection(
+                title: 'Instruksi',
+                children: [
+                  Text(
+                    instructions,
+                    style: const TextStyle(fontSize: 16, height: 1.6),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection({required String title, required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange.shade400,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIngredient(String ingredient) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            color: Colors.orange.shade400,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              ingredient,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

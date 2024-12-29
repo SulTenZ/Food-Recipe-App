@@ -10,3 +10,8 @@ Future<String?> getToken() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString('authToken');
 }
+
+Future<String?> getUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString('_id');
+}

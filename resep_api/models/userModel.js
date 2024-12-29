@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false  // Field OTP tidak wajib diisi.
   },
+  otpExpires: {
+    type: Date,
+    default: null
+  },
   recipe: {
     type: mongoose.Schema.Types.ObjectId,
     ref:"Recipe"
