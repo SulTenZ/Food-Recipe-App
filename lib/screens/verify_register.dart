@@ -1,9 +1,7 @@
-// lib/screens/verify_register.dart
-import 'package:flutter/material.dart'; // Library material untuk widget UI
-import 'package:http/http.dart' as http; // Library HTTP untuk request ke backend
-import 'dart:convert'; // Library JSON untuk encode/decode data
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-// Membuat StatefulWidget untuk screen verifikasi registrasi
 class VerifyRegisterScreen extends StatefulWidget {
   const VerifyRegisterScreen({super.key});
 
@@ -12,112 +10,186 @@ class VerifyRegisterScreen extends StatefulWidget {
 }
 
 class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
-  final _otpController = TextEditingController(); // Controller untuk input OTP
-  bool _isLoading = false; // Status loading untuk button
-  late String _email; // Variabel email yang didapat dari argument
+  final _otpController = TextEditingController();
+  bool _isLoading = false;
+  late String _email;
 
   @override
-  void didChangeDependencies() { // Mendapatkan email dari argument route
+  void didChangeDependencies() {
     super.didChangeDependencies();
-    _email = ModalRoute.of(context)!.settings.arguments as String; // Ambil argument email
+    _email = ModalRoute.of(context)!.settings.arguments as String;
   }
 
-  // Fungsi verifikasi OTP
   Future<void> _verifyOTP() async {
-    if (_otpController.text.isEmpty) { // Validasi jika OTP kosong
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter OTP code')), // Show pesan error
-      );
+    if (_otpController.text.isEmpty) {
+      _showErrorSnackBar('Masukkan kode OTP');
       return;
     }
 
-    setState(() => _isLoading = true); // Set status loading
+    setState(() => _isLoading = true);
 
     try {
-      // Kirim POST request ke endpoint verifikasi OTP
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/verify-register'), // URL endpoint verifikasi
-        headers: {'Content-Type': 'application/json'}, // Headers request
+        Uri.parse('http://10.0.2.2:5000/api/auth/verify-register'),
+        headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'email': _email, // Kirim email ke backend
-          'otp': _otpController.text, // Kirim OTP ke backend
+          'email': _email,
+          'otp': _otpController.text,
         }),
       );
 
-      if (response.statusCode == 200) { // Jika verifikasi berhasil
-        Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman home
+      if (response.statusCode == 200) {
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
-        final error = json.decode(response.body); // Ambil error dari response
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error['message'])), // Show error message
-        );
+        final error = json.decode(response.body);
+        _showErrorSnackBar(error['message']);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connection error')), // Show pesan error koneksi
-      );
+      _showErrorSnackBar('Terjadi kesalahan koneksi');
     } finally {
-      setState(() => _isLoading = false); // Set loading status ke false
+      setState(() => _isLoading = false);
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData prefixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      style: const TextStyle(letterSpacing: 8.0, fontSize: 20),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey.shade700),
+        prefixIcon: Icon(prefixIcon, color: Colors.orange.shade400),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.orange.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.orange.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.orange.shade400, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade400),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verifikasi'), // Set judul AppBar
-        backgroundColor: Colors.transparent, // Set background AppBar transparan
-        elevation: 0, // Hilangkan shadow pada AppBar
-        foregroundColor: Colors.black, // Warna teks AppBar
+        backgroundColor: Colors.orange,
+        elevation: 0,
+        foregroundColor: Colors.black,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0), // Padding konten
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Membuat kolom full lebar
-            children: [
-              const Text(
-                'Masukkan kode OTP', // Teks instruksi
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 30), // Space vertikal
-              TextFormField(
-                controller: _otpController, // Set controller OTP
-                decoration: InputDecoration(
-                  labelText: 'Kode OTP', // Label input OTP
-                  labelStyle: const TextStyle(color: Colors.black), // Style label
-                  border: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.orange), // Border default
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.orange.shade50, Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(
+                    Icons.mark_email_read_rounded,
+                    size: 64,
+                    color: Colors.orange.shade400,
                   ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.orange), // Border saat fokus
+                  const SizedBox(height: 24),
+                  Text(
+                    'Verifikasi Email',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade800,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.orange), // Border saat tidak fokus
+                  const SizedBox(height: 12),
+                  Text(
+                    'Masukkan kode OTP yang telah dikirim ke email Anda',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                keyboardType: TextInputType.number, // Input khusus angka
-                textAlign: TextAlign.center, // Text input center
-                style: const TextStyle(letterSpacing: 8.0, fontSize: 20), // Style input
+                  const SizedBox(height: 40),
+                  _buildTextField(
+                    controller: _otpController,
+                    label: 'Kode OTP',
+                    prefixIcon: Icons.pin_outlined,
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _verifyOTP,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade400,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Verifikasi',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 30), // Space vertikal
-              ElevatedButton(
-                onPressed: _isLoading ? null : _verifyOTP, // Jika loading, onPressed null
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15), // Padding button
-                  backgroundColor: Colors.orange, // Warna background button
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator() // Indicator loading
-                    : const Text('Verifikasi', style: TextStyle(color: Colors.black)), // Teks button
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
   }
 }

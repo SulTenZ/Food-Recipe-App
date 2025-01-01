@@ -1,5 +1,6 @@
-
+// lib/screens/profile.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_application/screens/payment_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _email = '';
   int _selectedIndex = 2;
   List<dynamic> _userList = [];
+  bool _isPremium = false;
 
   @override
   void initState() {
@@ -49,6 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _username = userData['username'];
           _email = userData['email'];
+          _isPremium = userData['isPremium']??false;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -164,41 +167,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _deleteAccount() async {
-    try {
-      final token = await getToken();
+Future<void> _deleteAccount() async {
+  // Show confirmation dialog
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Hapus Akun'),
+      content: const Text('Apakah Anda yakin ingin menghapus akun ini?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context), // Close the dialog
+          child: Text(
+            'Batal',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            Navigator.pop(context); // Close the dialog
+            // Proceed with account deletion
+            try {
+              final token = await getToken();
+              final userId = await getUserId();
+              if (token == null) {
+                Navigator.pushReplacementNamed(context, '/login');
+                return;
+              }
 
-      if (token == null) {
-        Navigator.pushReplacementNamed(context, '/login');
-        return;
-      }
+              final response = await http.delete(
+                Uri.parse('http://10.0.2.2:5000/api/auth/delete-user/$userId'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $token',
+                },
+              );
 
-      final response = await http.delete(
-        Uri.parse('http://10.0.2.2:5000/api/user/delete'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+              if (response.statusCode == 200) {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('authToken');
 
-      if (response.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('authToken');
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/login', (Route<dynamic> route) => false);
+              } else {
+                final error = json.decode(response.body);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error['message'] ?? 'Gagal menghapus akun')),
+                );
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Terjadi kesalahan koneksi')),
+              );
+            }
+          },
+          child: const Text(
+            'Hapus',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/login', (Route<dynamic> route) => false);
-      } else {
-        final error = json.decode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error['message'] ?? 'Gagal menghapus akun')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan koneksi')),
-      );
-    }
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -432,38 +463,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileOptions() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
+Widget _buildProfileOptions() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.orange.withOpacity(0.1),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        // Tambahkan kondisi untuk menampilkan tombol upgrade premium jika isPremium false
+        if (!_isPremium) 
           _buildProfileMenuItem(
-            icon: Icons.delete_outline_rounded,
-            title: 'Delete Account',
-            onTap: _deleteAccount,
+            icon: Icons.star_outline,
+            title: 'Upgrade to Premium',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PaymentScreen()),
+              );
+            },
             showDivider: true,
           ),
-          _buildProfileMenuItem(
-            icon: Icons.logout_rounded,
-            title: 'Logout',
-            onTap: _logout,
-            isLogout: true,
-            showDivider: false,
-          ),
-        ],
-      ),
-    );
-  }
+        _buildProfileMenuItem(
+          icon: Icons.delete_outline_rounded,
+          title: 'Delete Account',
+          onTap: _deleteAccount,
+          showDivider: true,
+        ),
+        _buildProfileMenuItem(
+          icon: Icons.logout_rounded,
+          title: 'Logout',
+          onTap: _logout,
+          isLogout: true,
+          showDivider: false,
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildProfileMenuItem({
     required IconData icon,
@@ -614,13 +659,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         subtitle: Text(
                           user['email'],
                           style: TextStyle(color: Colors.brown.shade400),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(
-                            Icons.delete_rounded,
-                            color: Colors.red.shade400,
-                          ),
-                          onPressed: () => _deleteUser(user['_id']),
                         ),
                       ),
                     );

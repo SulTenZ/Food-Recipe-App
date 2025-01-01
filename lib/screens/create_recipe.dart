@@ -72,114 +72,231 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       appBar: AppBar(
         title: const Text(
           'Tambahkan Resep',
-          style: TextStyle(color: Colors.black), // Warna teks judul
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
-        backgroundColor: Colors.white, // Warna latar belakang AppBar
-        elevation: 0, // Menghilangkan shadow
-        centerTitle: true, // Memusatkan judul
+        backgroundColor: Colors.orange.shade400,
+        elevation: 0,
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Form(
-        key: _formKey, // Key untuk validasi form
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Nama Resep',
-                labelStyle: TextStyle(color: Colors.black),
-                hintText: 'Masukkan nama resep',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Nama resep tidak boleh kosong';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _ingredientsController,
-              decoration: InputDecoration(
-                labelText: 'Bahan',
-                labelStyle: TextStyle(color: Colors.black),
-                hintText: 'Masukkan bahan-bahan',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Bahan tidak boleh kosong';
-                }
-                return null;
-              },
-              maxLines: 3, // Dapat memasukkan beberapa baris teks
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _instructionsController,
-              decoration: InputDecoration(
-                labelText: 'Langkah-Langkah',
-                labelStyle: TextStyle(color: Colors.black),
-                hintText: 'Masukkan langkah-langkah',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-                enabledBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.orange),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Langkah-langkah tidak boleh kosong';
-                }
-                return null;
-              },
-              maxLines: 5, // Beberapa baris untuk instruksi
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submitRecipe,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.orange,
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator()
-                  : Text(
-                      'Simpan',
-                      style: TextStyle(color: Colors.black),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+            ],
+          ),
+        ),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              _buildFormSection(
+                icon: Icons.restaurant_menu_rounded,
+                title: 'Detail Resep',
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: _buildInputDecoration(
+                      'Nama Resep',
+                      'Masukkan nama resep',
+                      Icons.food_bank_rounded,
                     ),
-            ),
-          ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama resep tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _ingredientsController,
+                    decoration: _buildInputDecoration(
+                      'Bahan-bahan',
+                      'Masukkan bahan-bahan (pisahkan dengan koma)',
+                      Icons.format_list_bulleted_rounded,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Bahan tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _instructionsController,
+                    decoration: _buildInputDecoration(
+                      'Langkah-Langkah',
+                      'Masukkan langkah-langkah pembuatan',
+                      Icons.format_list_numbered_rounded,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Langkah-langkah tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                    maxLines: 5,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submitRecipe,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade400,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 32,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 4,
+                ),
+                child: _isLoading
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Simpan Resep',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFormSection({
+    required IconData icon,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: Colors.orange.shade400,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.brown.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _buildInputDecoration(
+    String label,
+    String hint,
+    IconData icon,
+  ) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(
+        icon,
+        color: Colors.orange.shade400,
+      ),
+      labelStyle: TextStyle(
+        color: Colors.brown.shade600,
+        fontWeight: FontWeight.w500,
+      ),
+      hintStyle: TextStyle(
+        color: Colors.grey.shade400,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Colors.orange.shade200,
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Colors.orange.shade200,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Colors.orange.shade400,
+          width: 2,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Colors.red.shade300,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: Colors.red.shade400,
+          width: 2,
+        ),
+      ),
+      filled: true,
+      fillColor: Colors.orange.shade50.withOpacity(0.3),
     );
   }
 
@@ -188,6 +305,6 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     _nameController.dispose();
     _ingredientsController.dispose();
     _instructionsController.dispose();
-    super.dispose(); // Membersihkan controller saat widget dibuang
+    super.dispose();
   }
 }

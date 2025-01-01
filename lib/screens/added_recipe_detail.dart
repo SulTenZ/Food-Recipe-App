@@ -14,6 +14,12 @@ class AddedRecipeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Split instructions into steps
+    final List<String> instructionSteps = instructions
+        .split('\n')
+        .where((step) => step.trim().isNotEmpty)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -51,17 +57,21 @@ class AddedRecipeDetailScreen extends StatelessWidget {
             children: [
               _buildSection(
                 title: 'Bahan',
-                children: ingredients.map((ingredient) => _buildIngredient(ingredient)).toList(),
+                icon: Icons.check_circle_rounded,
+                children: ingredients.map((ingredient) => _buildListItem(ingredient)).toList(),
               ),
               const SizedBox(height: 20),
               _buildSection(
                 title: 'Instruksi',
-                children: [
-                  Text(
-                    instructions,
-                    style: const TextStyle(fontSize: 16, height: 1.6),
-                  ),
-                ],
+                icon: Icons.format_list_numbered_rounded,
+                children: instructionSteps.isEmpty 
+                    ? [_buildListItem(instructions)] 
+                    : instructionSteps.asMap().entries.map((entry) {
+                        return _buildListItem(
+                          entry.value,
+                          number: entry.key + 1,
+                        );
+                      }).toList(),
               ),
             ],
           ),
@@ -70,7 +80,11 @@ class AddedRecipeDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title, 
+    required IconData icon,
+    required List<Widget> children
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -87,36 +101,72 @@ class AddedRecipeDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.orange.shade400,
-            ),
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: Colors.orange.shade400,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade400,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ...children,
         ],
       ),
     );
   }
 
-  Widget _buildIngredient(String ingredient) {
+  Widget _buildListItem(String text, {int? number}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.check_circle_rounded,
-            color: Colors.orange.shade400,
-            size: 22,
-          ),
+          if (number != null)
+            Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade400,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  number.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            )
+          else
+            Icon(
+              Icons.check_circle_rounded,
+              color: Colors.orange.shade400,
+              size: 22,
+              semanticLabel: 'Checkbox icon',
+            ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              ingredient,
-              style: const TextStyle(fontSize: 16),
+              text,
+              style: const TextStyle(
+                fontSize: 16,
+                height: 1.6,
+              ),
             ),
           ),
         ],

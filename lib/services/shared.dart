@@ -15,3 +15,8 @@ Future<String?> getUserId() async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.getString('_id');
 }
+
+Future<void> saveUserId(String userId) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('_id', userId);
+}

@@ -4,6 +4,7 @@ import 'package:flutter_application/screens/added_recipe.dart';  // Mengimpor la
 import 'package:flutter_application/screens/create_recipe.dart';  // Mengimpor layar untuk membuat resep.
 import 'package:flutter_application/screens/edit_password.dart';
 import 'package:flutter_application/screens/forgot_password.dart';
+import 'package:flutter_application/screens/payment_screen.dart';
 import 'package:flutter_application/screens/profile.dart';
 import 'screens/login.dart';  // Mengimpor layar login.
 import 'screens/register.dart';  // Mengimpor layar registrasi.
@@ -39,8 +40,9 @@ class MyApp extends StatelessWidget {
         '/create-recipe': (context) => const CreateRecipeScreen(),  // Rute untuk layar membuat resep baru.
         '/profile': (context) => const ProfileScreen(), // Rute untuk Layar profil.
         '/forgot-password': (context) => const ForgotPasswordScreen(),
-        '/edit-password': (context) => const EditPasswordScreen()
-      },
+        '/edit-password': (context) => const EditPasswordScreen(),
+        '/payment': (context) => const PaymentScreen()
+      }
     );
   }
 }

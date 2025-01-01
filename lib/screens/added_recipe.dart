@@ -1,5 +1,6 @@
 // lib/screens/added_recipe.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_application/screens/payment_screen.dart';
 import 'package:flutter_application/services/shared.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,11 +21,13 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
   List<dynamic> _recipes = [];
   bool _isLoading = true;
   int _selectedIndex = 1;
+  bool _isPremium = false;
 
   @override
   void initState() {
     super.initState();
     _fetchRecipes();
+    _checkPremiumStatus();
   }
 
   Future<void> _fetchRecipes() async {
@@ -49,9 +52,9 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
         final List<dynamic> recipes = json.decode(response.body);
         setState(() {
           _recipes = recipes;
-          _fetchRecipes();
           _isLoading = false;
         });
+        _fetchRecipes();
       } else {
         throw Exception('Failed to load recipes');
       }
@@ -60,6 +63,74 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
       );
+    }
+  }
+
+  Future<void> _checkPremiumStatus() async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:5000/api/auth/user-profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        setState(() {
+          _isPremium = userData['isPremium'] ?? false;
+        });
+      }
+    } catch (e) {
+      print('Error checking premium status: $e');
+    }
+  }
+
+  void _showPremiumRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Upgrade to Premium'),
+        content: const Text(
+          'Anda perlu mengupgrade ke akun Premium untuk menambahkan resep baru.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentScreen(),
+                ),
+              );
+            },
+            child: const Text('Upgrade'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onAddRecipePressed() {
+    if (_isPremium) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreateRecipeScreen()),
+      );
+    } else {
+      _showPremiumRequiredDialog();
     }
   }
 
@@ -140,7 +211,8 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
         child: _isLoading
             ? Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.orange.shade400),
                 ),
               )
             : _recipes.isEmpty
@@ -148,14 +220,12 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                 : _buildRecipeList(),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreateRecipeScreen()),
-        ),
-        backgroundColor: Colors.orange.shade400,
+        onPressed: _onAddRecipePressed,
+        backgroundColor:
+            _isPremium ? Colors.orange.shade400 : Colors.grey.shade400,
         elevation: 4,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
+        label: Text(
           'Tambah Resep',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
@@ -198,69 +268,70 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.restaurant_menu_rounded,
-              size: 80,
-              color: Colors.orange.shade400,
-            ),
+
+Widget _buildEmptyState() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Belum ada resep yang ditambahkan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
+          child: Icon(
+            Icons.restaurant_menu_rounded,
+            size: 80,
+            color: Colors.orange.shade400,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Mulai bagikan resep favorit Anda!',
-            style: TextStyle(
+        ),
+        const SizedBox(height: 24),
+        Text(
+          _isPremium 
+            ? 'Belum ada resep yang ditambahkan' 
+            : 'Fitur tambah resep terbatas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _isPremium 
+            ? 'Mulai bagikan resep favorit Anda!' 
+            : 'Upgrade ke Premium untuk menambahkan resep',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _onAddRecipePressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isPremium ? Colors.orange.shade400 : Colors.grey.shade400,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: 4,
+          ),
+          child: Text( // Ensure the child parameter is provided here
+            _isPremium ? 'Tambah Resep Sekarang' : 'Upgrade Premium',
+            style: const TextStyle(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CreateRecipeScreen(),
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange.shade400,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              elevation: 4,
-            ),
-            child: const Text(
-              'Tambah Resep Sekarang',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildRecipeList() {
     return ListView.builder(
@@ -359,10 +430,8 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
                         builder: (context) => EditRecipeScreen(
                           recipeId: recipe['_id'],
                           currentName: recipe['name'],
-                          currentIngredients:
-                              List<String>.from(recipe['ingredients']),
-                          currentInstructions:
-                              recipe['instructions'] ?? 'Tidak ada instruksi',
+                          currentIngredients: List<String>.from(recipe['ingredients']),
+                          currentInstructions: recipe['instructions'] ?? 'Tidak ada instruksi',
                         ),
                       ),
                     );

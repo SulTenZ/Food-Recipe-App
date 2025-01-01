@@ -77,7 +77,7 @@ class RecipeDetailScreen extends StatelessWidget {
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.orange.shade400,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 recipe.name,

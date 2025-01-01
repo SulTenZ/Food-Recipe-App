@@ -1,12 +1,10 @@
 // resep_api/server.js
 const express = require('express'); // Mengimpor library express untuk membuat aplikasi web
 const mongoose = require('mongoose'); // Mengimpor library mongoose untuk berinteraksi dengan MongoDB
-// const dotenv = require('dotenv'); // Mengimpor library dotenv untuk mengelola variabel lingkungan
 const recipeRoutes = require('./routes/recipeRoutes'); // Mengimpor rute resep
-const paymentRoutes = require('./routes/paymentRoutes');
+// const paymentRoutes = require('./routes/paymentRoutes');
+const qrisPaymentRoutes = require('./routes/qrisPaymentRoutes');
 require("dotenv").config();
-
-// dotenv.config(); // Memuat variabel lingkungan dari file .env
 
 const app = express(); // Membuat instance aplikasi Express
 
@@ -35,5 +33,6 @@ const authRoutes = require('./routes/authRoutes');
 
 // Routes
 app.use('/api', recipeRoutes);
-app.use('/api/auth', authRoutes); // Menambahkan rute auth
-app.use('/api/payment', paymentRoutes);
+app.use('/api/auth', authRoutes);
+// app.use('/api/payment', paymentRoutes);
+app.use('/api/qris-payment', qrisPaymentRoutes);

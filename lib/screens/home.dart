@@ -114,7 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Token tidak ditemukan. Harap login kembali.')),
+          const SnackBar(
+              content: Text('Token tidak ditemukan. Harap login kembali.')),
         );
         Navigator.pushReplacementNamed(context, '/login');
         return;
@@ -169,7 +170,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -325,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-    
+
     return Expanded(
       child: GridView.builder(
         padding: const EdgeInsets.all(16),
@@ -418,7 +420,8 @@ class RecipeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: Stack(
                 children: [
                   Image.network(
