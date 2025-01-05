@@ -1,9 +1,11 @@
+// lib/screens/login.dart
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../services/shared.dart';
+import '../services/shared.dart'; // Mengimpor fungsi untuk menyimpan token dan userId secara lokal
 
+// Widget LoginScreen menggunakan StatefulWidget karena membutuhkan perubahan state
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,50 +13,62 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
+// State untuk LoginScreen
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  final _formKey = GlobalKey<FormState>(); // GlobalKey untuk memvalidasi form
+  final _emailController = TextEditingController(); // Controller untuk email
+  final _passwordController = TextEditingController(); // Controller untuk password
+  bool _isLoading = false; // Menandakan apakah sedang memproses login
+  bool _obscurePassword = true; // Menyembunyikan/memperlihatkan password
 
+  // Fungsi untuk melakukan login
   Future<void> _login() async {
+    // Validasi form, jika tidak valid, hentikan proses
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
+
+    setState(() => _isLoading = true); // Tampilkan indikator loading
+
     try {
+      // Kirim permintaan POST ke API login
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/login'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://10.0.2.2:5000/api/auth/login'), // URL API
+        headers: {'Content-Type': 'application/json'}, // Header permintaan
         body: json.encode({
-          'email': _emailController.text,
-          'password': _passwordController.text,
+          'email': _emailController.text, // Data email dari TextField
+          'password': _passwordController.text, // Data password dari TextField
         }),
       );
 
+      // Jika login berhasil (status 200)
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        await saveToken(responseData['token']);
-        await saveUserId(responseData['userId']);
-        print(responseData);
-        Navigator.pushReplacementNamed(context, '/home');
+        final responseData = json.decode(response.body); // Parse response JSON
+        await saveToken(responseData['token']); // Simpan token ke lokal
+        await saveUserId(responseData['userId']); // Simpan userId ke lokal
+        print(responseData); // Debug: Cetak data respons
+        Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman Home
       } else {
+        // Jika gagal login, tampilkan pesan kesalahan dari API
         final error = json.decode(response.body);
         _showErrorSnackBar(error['message']);
       }
     } catch (e) {
+      // Tampilkan pesan kesalahan koneksi
       _showErrorSnackBar('Terjadi kesalahan koneksi');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  // Fungsi untuk menampilkan SnackBar kesalahan
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red.shade400,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }
@@ -97,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 48),
                     _buildTextField(
-                      controller: _emailController,
+                      controller: _emailController, // Controller email
                       label: 'Email',
                       prefixIcon: Icons.email_outlined,
                       validator: (value) =>
@@ -105,11 +119,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
-                      controller: _passwordController,
+                      controller: _passwordController, // Controller password
                       label: 'Password',
                       prefixIcon: Icons.lock_outline,
                       obscureText: _obscurePassword,
                       suffixIcon: IconButton(
+                        // Tombol untuk menyembunyikan/memperlihatkan password
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_outlined
@@ -136,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _login,
+                      onPressed: _isLoading ? null : _login, // Tombol login
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.orange.shade400,
                         foregroundColor: Colors.white,
@@ -195,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // Widget untuk membangun TextField
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

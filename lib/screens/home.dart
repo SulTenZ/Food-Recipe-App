@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../services/shared.dart';
+import '../services/shared.dart'; // Untuk mengakses token dan data lokal
 import 'added_recipe.dart';
 import 'recipe_detail.dart';
 
-// Model untuk data resep
+// Model untuk data resep dengan atribut lengkap
 class Recipe {
   final int id;
   final String name;
@@ -20,6 +20,7 @@ class Recipe {
   final int servings;
   final String difficulty;
 
+  // Constructor dengan nilai default untuk beberapa field opsional
   const Recipe({
     required this.id,
     required this.name,
@@ -34,6 +35,7 @@ class Recipe {
     this.difficulty = '',
   });
 
+  // Factory constructor untuk membuat objek Recipe dari JSON
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       id: json['id'],
@@ -50,6 +52,7 @@ class Recipe {
   }
 }
 
+// Widget utama untuk layar Home yang dapat berubah state
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -57,25 +60,28 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+// State untuk HomeScreen
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  List<Recipe> _recipes = [];
-  List<Recipe> _filteredRecipes = [];
-  bool _isLoading = true;
-  TextEditingController _searchController = TextEditingController();
-  String _username = "Guest";
+  int _selectedIndex = 0; // Index untuk bottom navigation
+  List<Recipe> _recipes = []; // Daftar semua resep
+  List<Recipe> _filteredRecipes = []; // Daftar resep yang telah difilter
+  bool _isLoading = true; // Status loading data
+  TextEditingController _searchController = TextEditingController(); // Controller untuk search bar
+  String _username = "Guest"; // Nama pengguna default
 
   @override
   void initState() {
     super.initState();
-    _fetchRecipes();
-    _fetchUserProfile();
+    _fetchRecipes(); // Ambil data resep saat widget diinisialisasi
+    _fetchUserProfile(); // Ambil data profil pengguna
   }
 
+  // Fungsi untuk mengambil data profil pengguna dari API
   Future<void> _fetchUserProfile() async {
     try {
       final token = await getToken();
 
+      // Redirect ke login jika token tidak ditemukan
       if (token == null) {
         Navigator.pushReplacementNamed(context, '/login');
         return;
@@ -106,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Fungsi untuk mengambil data resep dari API
   Future<void> _fetchRecipes() async {
     setState(() => _isLoading = true);
 
@@ -114,8 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Token tidak ditemukan. Harap login kembali.')),
+          const SnackBar(content: Text('Token tidak ditemukan. Harap login kembali.')),
         );
         Navigator.pushReplacementNamed(context, '/login');
         return;
@@ -147,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Fungsi untuk memfilter resep berdasarkan query pencarian
   void _filterRecipes(String query) {
     setState(() {
       _filteredRecipes = _recipes
@@ -156,19 +163,23 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Handler untuk navigasi bottom bar
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
 
     if (index == 1) {
+      // Navigasi ke halaman resep tersimpan
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const AddedRecipeScreen()),
       ).then((_) => setState(() => _selectedIndex = 0));
     } else if (index == 2) {
+      // Navigasi ke halaman profil
       Navigator.pushNamed(context, '/profile');
     }
   }
 
+  // Fungsi untuk menampilkan pesan error
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -182,10 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.orange.shade50,
-              Colors.white,
-            ],
+            colors: [Colors.orange.shade50, Colors.white],
           ),
         ),
         child: SafeArea(

@@ -16,25 +16,27 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  // Variabel untuk menyimpan data pengguna
   String _username = '';
   String _email = '';
-  int _selectedIndex = 2;
-  List<dynamic> _userList = [];
-  bool _isPremium = false;
+  int _selectedIndex = 2; // Untuk mengatur navigasi pada BottomNavigationBar
+  List<dynamic> _userList = []; // Menyimpan daftar pengguna
+  bool _isPremium = false; // Status premium pengguna
 
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile();
-    _fetchAllUsers();
+    _fetchUserProfile(); // Memuat data profil pengguna saat layar diinisialisasi
+    _fetchAllUsers(); // Memuat daftar semua pengguna
   }
 
+  // Fungsi untuk memuat profil pengguna dari server
   Future<void> _fetchUserProfile() async {
     try {
-      final token = await getToken();
+      final token = await getToken(); // Mendapatkan token autentikasi
 
       if (token == null) {
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/login'); // Navigasi ke login jika token tidak ada
         return;
       }
 
@@ -51,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _username = userData['username'];
           _email = userData['email'];
-          _isPremium = userData['isPremium']??false;
+          _isPremium = userData['isPremium'] ?? false;
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,6 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Fungsi untuk memuat daftar pengguna
   Future<void> _fetchAllUsers() async {
     try {
       final token = await getToken();
@@ -97,6 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Fungsi untuk menghapus pengguna
   Future<void> _deleteUser(String userId) async {
     try {
       final token = await getToken();
@@ -114,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (response.statusCode == 200) {
-        _fetchAllUsers();
+        _fetchAllUsers(); // Memuat ulang daftar pengguna setelah penghapusan
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pengguna berhasil dihapus')),
         );
@@ -131,6 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Fungsi untuk logout
   Future<void> _logout() async {
     try {
       final token = await getToken();
@@ -150,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('authToken');
+        await prefs.remove('authToken'); // Menghapus token dari penyimpanan lokal
 
         Navigator.pushNamedAndRemoveUntil(
             context, '/login', (Route<dynamic> route) => false);
@@ -167,70 +172,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-Future<void> _deleteAccount() async {
-  // Show confirmation dialog
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Hapus Akun'),
-      content: const Text('Apakah Anda yakin ingin menghapus akun ini?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context), // Close the dialog
-          child: Text(
-            'Batal',
-            style: TextStyle(color: Colors.grey.shade600),
+  // Fungsi untuk menghapus akun pengguna
+  Future<void> _deleteAccount() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Akun'),
+        content: const Text('Apakah Anda yakin ingin menghapus akun ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Menutup dialog
+            child: Text(
+              'Batal',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ),
-        ),
-        TextButton(
-          onPressed: () async {
-            Navigator.pop(context); // Close the dialog
-            // Proceed with account deletion
-            try {
-              final token = await getToken();
-              final userId = await getUserId();
-              if (token == null) {
-                Navigator.pushReplacementNamed(context, '/login');
-                return;
-              }
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Menutup dialog
+              try {
+                final token = await getToken();
+                final userId = await getUserId();
+                if (token == null) {
+                  Navigator.pushReplacementNamed(context, '/login');
+                  return;
+                }
 
-              final response = await http.delete(
-                Uri.parse('http://10.0.2.2:5000/api/auth/delete-user/$userId'),
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer $token',
-                },
-              );
+                final response = await http.delete(
+                  Uri.parse('http://10.0.2.2:5000/api/auth/delete-user/$userId'),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer $token',
+                  },
+                );
 
-              if (response.statusCode == 200) {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('authToken');
+                if (response.statusCode == 200) {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('authToken');
 
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/login', (Route<dynamic> route) => false);
-              } else {
-                final error = json.decode(response.body);
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/login', (Route<dynamic> route) => false);
+                } else {
+                  final error = json.decode(response.body);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error['message'] ?? 'Gagal menghapus akun')),
+                  );
+                }
+              } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(error['message'] ?? 'Gagal menghapus akun')),
+                  const SnackBar(content: Text('Terjadi kesalahan koneksi')),
                 );
               }
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Terjadi kesalahan koneksi')),
-              );
-            }
-          },
-          child: const Text(
-            'Hapus',
-            style: TextStyle(color: Colors.red),
+            },
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-
+  // Fungsi untuk menangani navigasi pada BottomNavigationBar
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -595,6 +599,7 @@ Widget _buildProfileOptions() {
     );
   }
 
+  // Fungsi untuk menampilkan user list
   void _showUserListBottomSheet() {
     showModalBottomSheet(
       context: context,

@@ -10,6 +10,7 @@ import 'added_recipe_detail.dart';
 import 'edit_recipe.dart';
 import 'profile.dart';
 
+// Widget AddedRecipeScreen menggunakan StatefulWidget untuk mengelola daftar resep yang ditambahkan user
 class AddedRecipeScreen extends StatefulWidget {
   const AddedRecipeScreen({super.key});
 
@@ -17,19 +18,21 @@ class AddedRecipeScreen extends StatefulWidget {
   State<AddedRecipeScreen> createState() => _AddedRecipeScreenState();
 }
 
+// State untuk AddedRecipeScreen
 class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
-  List<dynamic> _recipes = [];
-  bool _isLoading = true;
-  int _selectedIndex = 1;
-  bool _isPremium = false;
+  List<dynamic> _recipes = []; // Menyimpan daftar resep
+  bool _isLoading = true; // Menandakan proses loading data
+  int _selectedIndex = 1; // Index untuk bottom navigation
+  bool _isPremium = false; // Status premium user
 
   @override
   void initState() {
     super.initState();
-    _fetchRecipes();
-    _checkPremiumStatus();
+    _fetchRecipes(); // Mengambil data resep saat widget diinisialisasi
+    _checkPremiumStatus(); // Memeriksa status premium user
   }
 
+  // Fungsi untuk mengambil daftar resep dari API
   Future<void> _fetchRecipes() async {
     final token = await getToken();
     if (token == null) {
@@ -54,7 +57,6 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
           _recipes = recipes;
           _isLoading = false;
         });
-        _fetchRecipes();
       } else {
         throw Exception('Failed to load recipes');
       }
@@ -66,6 +68,7 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     }
   }
 
+  // Fungsi untuk memeriksa status premium user
   Future<void> _checkPremiumStatus() async {
     try {
       final token = await getToken();
@@ -93,6 +96,7 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     }
   }
 
+  // Dialog untuk menampilkan peringatan upgrade ke premium
   void _showPremiumRequiredDialog() {
     showDialog(
       context: context,
@@ -123,17 +127,19 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     );
   }
 
+  // Handler untuk tombol tambah resep
   void _onAddRecipePressed() {
     if (_isPremium) {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const CreateRecipeScreen()),
-      );
+      ).then((_) => _fetchRecipes());
     } else {
       _showPremiumRequiredDialog();
     }
   }
 
+  // Fungsi untuk menghapus resep
   Future<void> _deleteRecipe(String recipeId) async {
     final token = await getToken();
     try {
@@ -157,6 +163,7 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     }
   }
 
+  // Handler untuk bottom navigation
   void _onItemTapped(int index) {
     switch (index) {
       case 0:
@@ -268,7 +275,7 @@ class _AddedRecipeScreenState extends State<AddedRecipeScreen> {
     );
   }
 
-
+// Widget untuk menampilkan tampilan ketika resep kosong
 Widget _buildEmptyState() {
   return Center(
     child: Column(
@@ -332,7 +339,7 @@ Widget _buildEmptyState() {
   );
 }
 
-
+  // Widget untuk menampilkan daftar resep
   Widget _buildRecipeList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -434,7 +441,7 @@ Widget _buildEmptyState() {
                           currentInstructions: recipe['instructions'] ?? 'Tidak ada instruksi',
                         ),
                       ),
-                    );
+                    ).then((_) => _fetchRecipes());
                   },
                 ),
                 IconButton(

@@ -1,29 +1,29 @@
 // resep_api/models/userModel.js
-const mongoose = require('mongoose');  // Mengimpor Mongoose untuk interaksi dengan MongoDB.
-const bcrypt = require('bcrypt');  // Mengimpor bcrypt untuk melakukan hashing pada password.
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 // Skema untuk user
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: [true, 'Username is required'],  // Field username wajib diisi.
-    unique: true,  // Setiap username harus unik.
-    trim: true  // Menghapus spasi di awal dan akhir username.
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],  // Field email wajib diisi.
-    unique: true,  // Setiap email harus unik.
-    trim: true  // Menghapus spasi di awal dan akhir email.
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],  // Field password wajib diisi.
-    minlength: [6, 'Password must be at least 6 characters long']  // Minimal panjang password adalah 6 karakter.
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters long']
   },
   otp: {
     type: String,
-    required: false  // Field OTP tidak wajib diisi.
+    required: false
   },
   otpExpires: {
     type: Date,
@@ -35,15 +35,15 @@ const userSchema = new mongoose.Schema({
   },
   isVerified: {
     type: Boolean,
-    default: false  // Secara default, akun tidak terverifikasi saat pertama kali dibuat.
+    default: false
   },
   loginAttempts: {
     type: Number,
-    default: 0  // Jumlah percobaan login gagal awalnya di-set ke 0.
+    default: 0
   },
   banExpires: {
     type: Date,
-    default: null  // Waktu kedaluwarsa ban (blokir sementara), secara default null (tidak diblokir).
+    default: null
   },
   tokens: [{
     token: {
@@ -67,12 +67,11 @@ const userSchema = new mongoose.Schema({
 
 // Middleware untuk hashing password sebelum disimpan ke database
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();  // Jika password tidak diubah, lanjutkan ke proses berikutnya.
-  this.password = await bcrypt.hash(this.password, 10);  // Hash password dengan bcrypt, dengan salt 10.
-  next();  // Lanjutkan ke proses berikutnya.
+  if (!this.isModified('password')) return next();
+  next();
 });
 
 // Membuat model User berdasarkan skema yang telah ditentukan
 const User = mongoose.model('User', userSchema);
 
-module.exports = User;  // Mengekspor model User agar bisa digunakan di tempat lain.
+module.exports = User;

@@ -1,38 +1,39 @@
-// resep_api/controllers/authController.js
-const User = require('../models/userModel');  // Mengambil model `User` dari file userModel.js untuk mengakses data pengguna di database.
-const bcrypt = require('bcrypt');  // Untuk mengenkripsi password dan mencocokkannya saat login.
-const nodemailer = require('nodemailer');  // Mengirimkan email untuk mengirimkan OTP ke pengguna.
-const crypto = require('crypto');  // Menghasilkan kode OTP acak.
+// Mengimpor model User dan berbagai library yang diperlukan
+const User = require('../models/userModel');
+const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const MAX_LOGIN_ATTEMPTS = 3;  // Batas maksimum percobaan login yang salah.
-const BAN_TIME = 10 * 60 * 1000;  // Durasi ban sementara dalam milidetik (10 menit).
+// Mendefinisikan batas login maksimum dan waktu ban sementara
+const MAX_LOGIN_ATTEMPTS = 3;
+const BAN_TIME = 10 * 60 * 1000;
 
-// Membuat transporter untuk mengirim email melalui Gmail
+// Konfigurasi transporter untuk mengirim email menggunakan Gmail
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,  // Mengambil alamat email dari environment variables.
-    pass: process.env.EMAIL_PASS   // Mengambil password email dari environment variables.
+    user: process.env.EMAIL_USER, // Email pengirim diambil dari environment variable
+    pass: process.env.EMAIL_PASS  // Password email pengirim
   }
 });
 
-// Fungsi untuk mengirim email OTP
+// Fungsi untuk mengirim OTP melalui email
 const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,  // Alamat pengirim (diambil dari environment variables).
-    to: email,  // Alamat tujuan (alamat email pengguna).
-    subject: 'Your OTP Code',  // Judul email.
-    text: `Your OTP code is: ${otp}`  // Isi email dengan kode OTP.
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Your OTP Code',
+    text: `Your OTP code is: ${otp}`
   };
 
-  return transporter.sendMail(mailOptions);  // Mengirim email dan mengembalikan hasil pengiriman.
+  return transporter.sendMail(mailOptions);
 };
 
-// Register
+// Fungsi register untuk mendaftarkan pengguna baru
 const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;  // Mendapatkan data dari permintaan pengguna.
+    const { username, email, password } = req.body;
 
     // Cek apakah email sudah terdaftar
     const userExists = await User.findOne({ email });
@@ -40,13 +41,13 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Menghasilkan OTP secara acak
+    // Menghasilkan OTP acak
     const otp = crypto.randomBytes(3).toString('hex').toUpperCase();
 
-    // Membuat pengguna baru dengan data yang diterima
+    // Membuat pengguna baru
     const user = new User({ username, email, password, otp });
 
-    // Menyimpan pengguna baru di database
+    // Menyimpan pengguna di database
     await user.save();
 
     // Mengirim OTP ke email pengguna
@@ -57,14 +58,14 @@ const register = async (req, res) => {
       message: 'User registered. OTP has been sent to your email.'
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });  // Menangani kesalahan dan mengembalikan pesan error.
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Verifikasi OTP saat register
+// Fungsi untuk memverifikasi OTP
 const verifyOTP = async (req, res) => {
   try {
-    const { email, otp } = req.body;  // Mendapatkan email dan OTP dari permintaan pengguna.
+    const { email, otp } = req.body;
 
     // Mencari pengguna berdasarkan email
     const user = await User.findOne({ email });
@@ -77,9 +78,9 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    // Memperbarui status verifikasi pengguna
+    // Memperbarui status pengguna
     user.isVerified = true;
-    user.otp = undefined;  // Menghapus OTP setelah diverifikasi.
+    user.otp = undefined;
     await user.save();
 
     res.status(200).json({
@@ -87,11 +88,11 @@ const verifyOTP = async (req, res) => {
       message: 'Account verified successfully.'
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });  // Menangani kesalahan dan mengembalikan pesan error.
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Fungsi generate token JWT
+// Fungsi untuk menghasilkan token JWT
 const generateAuthToken = async (user) => {
   const token = jwt.sign(
     { 
@@ -102,17 +103,17 @@ const generateAuthToken = async (user) => {
     { expiresIn: '1h' }
   );
 
-  // Simpan token ke dalam array tokens user
+  // Simpan token di array tokens user
   user.tokens = user.tokens.concat({ token });
   await user.save();
 
   return token;
 };
 
-// Login
+// Fungsi login
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;  // Mendapatkan email dan password dari permintaan pengguna.
+    const { email, password } = req.body;
 
     // Mencari pengguna berdasarkan email
     const user = await User.findOne({ email });
@@ -120,7 +121,7 @@ const login = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Memeriksa apakah pengguna dalam status banned
+    // Memeriksa status ban pengguna
     if (user.banExpires && user.banExpires > Date.now()) {
       const remainingTime = Math.ceil((user.banExpires - Date.now()) / 60000);
       return res.status(403).json({
@@ -128,7 +129,7 @@ const login = async (req, res) => {
       });
     }
 
-    // Memeriksa apakah akun pengguna sudah diverifikasi
+    // Memeriksa apakah akun sudah diverifikasi
     if (!user.isVerified) {
       return res.status(403).json({ message: 'Account not verified. Please verify your account.' });
     }
@@ -136,33 +137,25 @@ const login = async (req, res) => {
     // Memeriksa kecocokan password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      user.loginAttempts += 1;  // Menambah jumlah percobaan login yang gagal.
+      user.loginAttempts += 1;
 
-      // Jika login gagal mencapai batas maksimum, melakukan ban sementara
+      // Jika login gagal mencapai batas maksimum, ban sementara
       if (user.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
         user.banExpires = new Date(Date.now() + BAN_TIME);
         user.loginAttempts = 0;
       }
 
       await user.save();
-
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-
-
-    // Reset loginAttempts dan banExpires jika login berhasil
+    // Reset loginAttempts dan banExpires jika berhasil login
     user.loginAttempts = 0;
     user.banExpires = null;
     await user.save();
 
     // Generate token
     const token = await generateAuthToken(user);
-    
-    console.log(token)
-    console.log('Server Key:', process.env.MIDTRANS_SERVER_KEY);
-    console.log('Client Key:', process.env.MIDTRANS_CLIENT_KEY);
-
 
     res.status(200).json({
       status: 'success',
@@ -171,31 +164,30 @@ const login = async (req, res) => {
       userId: user._id
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });  // Menangani kesalahan dan mengembalikan pesan error.
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Forgot Password
+// Fungsi untuk proses lupa password
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Cari pengguna berdasarkan email
+    // Mencari pengguna berdasarkan email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate OTP yang lebih kompleks
+    // Menghasilkan OTP untuk reset password
     const otp = crypto.randomBytes(4).toString('hex').toUpperCase();
-    const otpExpires = Date.now() + 15 * 60 * 1000; // OTP berlaku 15 menit
+    const otpExpires = Date.now() + 15 * 60 * 1000;
 
-    // Update user dengan OTP dan waktu kedaluwarsa
     user.otp = otp;
     user.otpExpires = otpExpires;
     await user.save();
 
-    // Kirim email dengan OTP
+    // Mengirimkan email dengan OTP
     await sendOTPEmail(email, otp);
 
     res.status(200).json({
@@ -203,21 +195,19 @@ const forgotPassword = async (req, res) => {
       message: 'Password reset OTP has been sent to your email.',
     });
   } catch (error) {
-    console.error('Forgot Password Error:', error);
     res.status(500).json({ message: 'Server error during password reset process' });
   }
 };
 
-// Reset Password
+// Fungsi untuk mereset password pengguna
 const resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    // Cari pengguna berdasarkan email
     const user = await User.findOne({ 
       email,
       otp,
-      otpExpires: { $gt: Date.now() } // Periksa apakah OTP masih berlaku
+      otpExpires: { $gt: Date.now() }
     });
 
     if (!user) {
@@ -226,15 +216,13 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Validasi kekuatan password (contoh sederhana)
     if (newPassword.length < 8) {
       return res.status(400).json({ 
         message: 'Password must be at least 8 characters long' 
       });
     }
 
-    // Update password
-    user.password = newPassword; // Akan di-hash oleh middleware pre-save
+    user.password = newPassword;
     user.otp = undefined;
     user.otpExpires = undefined;
     await user.save();
@@ -244,15 +232,13 @@ const resetPassword = async (req, res) => {
       message: 'Password has been reset successfully.',
     });
   } catch (error) {
-    console.error('Reset Password Error:', error);
     res.status(500).json({ message: 'Server error during password reset' });
   }
 };
 
-// Logout
+// Fungsi untuk logout
 const logout = async (req, res) => {
   try {
-    // Hapus token saat ini dari array tokens
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token;
     });
@@ -268,6 +254,7 @@ const logout = async (req, res) => {
   }
 };
 
+// Fungsi untuk mendapatkan profil pengguna
 const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
@@ -278,29 +265,26 @@ const getUserProfile = async (req, res) => {
     }
     res.status(200).json(user);
   } catch (error) {
-    console.error("Error fetching user profile:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Delete Account
+// Fungsi untuk menghapus akun pengguna
 const deleteUser = async (req, res) => {
-  const {id} = req.params;
+  const { id } = req.params;
   try {
     const user = await User.findByIdAndDelete(id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-      
     }
-    res.status(200).json({message: "User berhasil dihapus" });
+    res.status(200).json({ message: "User berhasil dihapus" });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error"});
+    res.status(500).json({ message: "Internal server error" });
   }
+};
 
-}
-
-// GetAllUsers
-const GetAllUsers = async (req,res) => {
+// Fungsi untuk mendapatkan daftar semua pengguna
+const GetAllUsers = async (req, res) => {
   try {
     const user = await User.find({});
     if (!user) {
@@ -308,12 +292,11 @@ const GetAllUsers = async (req,res) => {
     }
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: "Internal server error"});
-    console.error('error mengambil data user:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-// Mengekspor fungsi untuk digunakan di tempat lain
+// Mengekspor semua fungsi agar dapat digunakan di file lain
 module.exports = {
   register,
   verifyOTP,
