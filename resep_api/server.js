@@ -2,7 +2,6 @@
 const express = require('express'); // Mengimpor library express untuk membuat aplikasi web
 const mongoose = require('mongoose'); // Mengimpor library mongoose untuk berinteraksi dengan MongoDB
 const recipeRoutes = require('./routes/recipeRoutes'); // Mengimpor rute resep
-// const paymentRoutes = require('./routes/paymentRoutes');
 const qrisPaymentRoutes = require('./routes/qrisPaymentRoutes');
 require("dotenv").config();
 
@@ -34,5 +33,4 @@ const authRoutes = require('./routes/authRoutes');
 // Routes
 app.use('/api', recipeRoutes);
 app.use('/api/auth', authRoutes);
-// app.use('/api/payment', paymentRoutes);
 app.use('/api/qris-payment', qrisPaymentRoutes);
