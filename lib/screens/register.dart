@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+// Widget RegisterScreen menggunakan StatefulWidget karena membutuhkan perubahan state
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -10,16 +11,19 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
+// State untuk RegisterScreen
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _acceptTerms = false;
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  final _formKey = GlobalKey<FormState>(); // GlobalKey untuk memvalidasi form
+  final _nameController = TextEditingController(); // Controller untuk nama
+  final _emailController = TextEditingController(); // Controller untuk email
+  final _passwordController = TextEditingController(); // Controller untuk password
+  bool _acceptTerms = false; // Status penerimaan syarat dan ketentuan
+  bool _isLoading = false; // Menandakan apakah sedang memproses registrasi
+  bool _obscurePassword = true; // Menyembunyikan/memperlihatkan password
 
+  // Fungsi untuk melakukan registrasi
   Future<void> _register() async {
+    // Validasi form dan penerimaan syarat dan ketentuan
     if (!_formKey.currentState!.validate() || !_acceptTerms) {
       if (!_acceptTerms) {
         _showErrorSnackBar('Terima syarat & ketentuan');
@@ -27,36 +31,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoading = true); // Tampilkan indikator loading
 
     try {
+      // Kirim permintaan POST ke API registrasi
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/register'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://10.0.2.2:5000/api/auth/register'), // URL API
+        headers: {'Content-Type': 'application/json'}, // Header permintaan
         body: json.encode({
-          'username': _nameController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
+          'username': _nameController.text, // Data nama dari TextField
+          'email': _emailController.text, // Data email dari TextField
+          'password': _passwordController.text, // Data password dari TextField
         }),
       );
 
+      // Jika registrasi berhasil (status 201)
       if (response.statusCode == 201) {
+        // Pindah ke halaman verifikasi registrasi dengan membawa data email
         Navigator.pushReplacementNamed(
           context,
           '/verify-register',
           arguments: _emailController.text,
         );
       } else {
+        // Jika gagal registrasi, tampilkan pesan kesalahan dari API
         final error = json.decode(response.body);
         _showErrorSnackBar(error['message']);
       }
     } catch (e) {
+      // Tampilkan pesan kesalahan koneksi
       _showErrorSnackBar('Connection error');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  // Fungsi untuk menampilkan SnackBar kesalahan
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -71,6 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar dengan judul dan styling
       appBar: AppBar(
         title: const Text(
           'Buat akun',
@@ -80,6 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         elevation: 0,
         foregroundColor: Colors.black,
       ),
+      // Body dengan gradient background
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -97,6 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Teks judul halaman
                     Text(
                       'Buat akun agar dapat\nmasuk ke aplikasi',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -105,6 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                     ),
                     const SizedBox(height: 32),
+                    // TextField untuk nama
                     _buildTextField(
                       controller: _nameController,
                       label: 'Nama',
@@ -113,6 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           value?.isEmpty ?? true ? 'Masukkan nama Anda' : null,
                     ),
                     const SizedBox(height: 20),
+                    // TextField untuk email
                     _buildTextField(
                       controller: _emailController,
                       label: 'Email',
@@ -121,6 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           value?.isEmpty ?? true ? 'Masukkan email Anda' : null,
                     ),
                     const SizedBox(height: 20),
+                    // TextField untuk password dengan toggle visibility
                     _buildTextField(
                       controller: _passwordController,
                       label: 'Password',
@@ -133,14 +149,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               : Icons.visibility_off_outlined,
                           color: Colors.grey,
                         ),
-                        onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
                       ),
                       validator: (value) => value?.isEmpty ?? true
                           ? 'Masukkan password Anda'
                           : null,
                     ),
                     const SizedBox(height: 20),
+                    // Checkbox untuk syarat dan ketentuan
                     Row(
                       children: [
                         SizedBox(
@@ -164,6 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
                     const SizedBox(height: 32),
+                    // Tombol Sign Up dengan loading indicator
                     ElevatedButton(
                       onPressed: _isLoading ? null : _register,
                       style: ElevatedButton.styleFrom(
@@ -194,6 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                     ),
                     const SizedBox(height: 24),
+                    // Link ke halaman login untuk pengguna yang sudah memiliki akun
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -223,6 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // Widget untuk membangun TextField dengan styling yang konsisten
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

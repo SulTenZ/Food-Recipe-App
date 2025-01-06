@@ -1,11 +1,11 @@
-// resep_api/controllers/recipeController.js
-const Recipe = require('../models/recipeModel'); // Mengimpor model Recipe dari file recipeModel.js
+const Recipe = require('../models/recipeModel'); // Mengimpor model resep
 
-// POST data
+// POST: Membuat resep baru
 const createRecipe = async (req, res) => {
   try {
-    const { name, ingredients, instructions } = req.body;
+    const { name, ingredients, instructions } = req.body; // Mengambil data dari request body
     
+    // Validasi input
     const errors = [];
     if (!name) errors.push("Name is required");
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
@@ -21,6 +21,7 @@ const createRecipe = async (req, res) => {
       });
     }
 
+    // Membuat dan menyimpan resep ke database
     const recipe = new Recipe({ 
       name, 
       ingredients, 
@@ -28,12 +29,14 @@ const createRecipe = async (req, res) => {
       user: req.user._id // Menyimpan ID pengguna yang membuat resep
     });
     await recipe.save();
+
     res.status(201).json({
       status: "success",
       message: "Recipe created successfully",
       data: recipe
     });
   } catch (error) {
+    // Menangani error yang terjadi
     res.status(400).json({ 
       status: "error",
       message: error.message,
@@ -42,51 +45,51 @@ const createRecipe = async (req, res) => {
   }
 };
 
-// GET data
+// GET: Mengambil semua resep milik pengguna
 const getRecipes = async (req, res) => {
   try {
-    const recipes = await Recipe.find({ user: req.user._id }); // Hanya mengambil resep yang dibuat oleh pengguna yang sedang login
-    res.status(200).json(recipes);
+    const recipes = await Recipe.find({ user: req.user._id }); // Hanya mengambil resep milik pengguna
+    res.status(200).json(recipes); // Mengirimkan data resep sebagai respons
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// GET data by id
+// GET by ID: Mengambil satu resep berdasarkan ID
 const getRecipeById = async (req, res) => {
   try {
-    const recipe = await Recipe.findOne({ _id: req.params.id, user: req.user._id }); // Mencari resep berdasarkan ID dan pengguna
+    const recipe = await Recipe.findOne({ _id: req.params.id, user: req.user._id }); // Validasi ID dan pengguna
     if (!recipe) {
       return res.status(404).json({ message: 'Recipe not found' });
     }
-    res.status(200).json(recipe);
+    res.status(200).json(recipe); // Mengirimkan data resep
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// PUT data (update)
-const updateRecipe = async (req, res) => { // Mendefinisikan fungsi untuk memperbarui resep
+// PUT: Memperbarui resep berdasarkan ID
+const updateRecipe = async (req, res) => {
   try {
-    const { name, ingredients, instructions } = req.body; // Mengambil data dari body permintaan
+    const { name, ingredients, instructions } = req.body;
     const recipe = await Recipe.findByIdAndUpdate(
-      req.params.id, // Mencari resep berdasarkan ID dari parameter
-      { name, ingredients, instructions }, // Data baru untuk diperbarui
-      { new: true } // Mengembalikan objek resep yang diperbarui
+      req.params.id,
+      { name, ingredients, instructions },
+      { new: true } // Mengembalikan data terbaru setelah pembaruan
     );
-    if (!recipe) { // Jika resep tidak ditemukan
-      return res.status(404).json({ message: 'Recipe not found' }); // Mengembalikan pesan tidak ditemukan
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
     }
-    res.status(200).json(recipe); // Mengembalikan resep yang diperbarui sebagai respons
-  } catch (error) { // Menangani kesalahan
-    res.status(400).json({ message: error.message }); // Mengembalikan pesan kesalahan
+    res.status(200).json(recipe); // Mengirimkan data resep yang diperbarui
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 
-// DEL data (delete)
+// DELETE: Menghapus resep berdasarkan ID
 const deleteRecipe = async (req, res) => {
   try {
-    const recipe = await Recipe.findOneAndDelete({ _id: req.params.id, user: req.user._id }); // Mencari dan menghapus resep berdasarkan ID dan pengguna
+    const recipe = await Recipe.findOneAndDelete({ _id: req.params.id, user: req.user._id }); // Validasi ID dan pengguna
     if (!recipe) {
       return res.status(404).json({ message: 'Recipe not found' });
     }
@@ -96,7 +99,7 @@ const deleteRecipe = async (req, res) => {
   }
 };
 
-// Export controller
+// Mengekspor fungsi controller agar dapat digunakan di router
 module.exports = {
   createRecipe,
   getRecipes,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+// Widget VerifyRegisterScreen menggunakan StatefulWidget untuk menangani verifikasi OTP
 class VerifyRegisterScreen extends StatefulWidget {
   const VerifyRegisterScreen({super.key});
 
@@ -10,48 +11,57 @@ class VerifyRegisterScreen extends StatefulWidget {
   _VerifyRegisterScreenState createState() => _VerifyRegisterScreenState();
 }
 
+// State untuk VerifyRegisterScreen
 class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
-  final _otpController = TextEditingController();
-  bool _isLoading = false;
-  late String _email;
+  final _otpController = TextEditingController(); // Controller untuk input OTP
+  bool _isLoading = false; // Menandakan apakah sedang memproses verifikasi
+  late String _email; // Menyimpan email yang akan diverifikasi
 
   @override
+  // Mengambil email dari arguments yang dikirim saat navigasi
   void didChangeDependencies() {
     super.didChangeDependencies();
     _email = ModalRoute.of(context)!.settings.arguments as String;
   }
 
+  // Fungsi untuk memverifikasi kode OTP
   Future<void> _verifyOTP() async {
+    // Validasi input OTP
     if (_otpController.text.isEmpty) {
       _showErrorSnackBar('Masukkan kode OTP');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isLoading = true); // Tampilkan indikator loading
 
     try {
+      // Kirim permintaan POST ke API verifikasi
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:5000/api/auth/verify-register'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('http://10.0.2.2:5000/api/auth/verify-register'), // URL API
+        headers: {'Content-Type': 'application/json'}, // Header permintaan
         body: json.encode({
-          'email': _email,
-          'otp': _otpController.text,
+          'email': _email, // Email yang diverifikasi
+          'otp': _otpController.text, // Kode OTP dari input
         }),
       );
 
+      // Jika verifikasi berhasil (status 200)
       if (response.statusCode == 200) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/home'); // Pindah ke halaman Home
       } else {
+        // Jika gagal verifikasi, tampilkan pesan kesalahan dari API
         final error = json.decode(response.body);
         _showErrorSnackBar(error['message']);
       }
     } catch (e) {
+      // Tampilkan pesan kesalahan koneksi
       _showErrorSnackBar('Terjadi kesalahan koneksi');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
+  // Fungsi untuk menampilkan SnackBar kesalahan
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -63,6 +73,7 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
     );
   }
 
+  // Widget untuk membangun TextField khusus input OTP
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -70,9 +81,9 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.number,
-      textAlign: TextAlign.center,
-      style: const TextStyle(letterSpacing: 8.0, fontSize: 20),
+      keyboardType: TextInputType.number, // Keyboard khusus angka
+      textAlign: TextAlign.center, // Text di tengah
+      style: const TextStyle(letterSpacing: 8.0, fontSize: 20), // Style untuk OTP
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade700),
@@ -102,11 +113,13 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar dengan warna dan styling yang konsisten
       appBar: AppBar(
         backgroundColor: Colors.orange,
         elevation: 0,
         foregroundColor: Colors.black,
       ),
+      // Body dengan gradient background
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -122,12 +135,14 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Icon email terverifikasi
                   Icon(
                     Icons.mark_email_read_rounded,
                     size: 64,
                     color: Colors.orange.shade400,
                   ),
                   const SizedBox(height: 24),
+                  // Judul halaman
                   Text(
                     'Verifikasi Email',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -137,6 +152,7 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
+                  // Instruksi untuk pengguna
                   Text(
                     'Masukkan kode OTP yang telah dikirim ke email Anda',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -145,12 +161,14 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
+                  // TextField untuk input OTP
                   _buildTextField(
                     controller: _otpController,
                     label: 'Kode OTP',
                     prefixIcon: Icons.pin_outlined,
                   ),
                   const SizedBox(height: 32),
+                  // Tombol verifikasi dengan loading indicator
                   ElevatedButton(
                     onPressed: _isLoading ? null : _verifyOTP,
                     style: ElevatedButton.styleFrom(
@@ -188,6 +206,7 @@ class _VerifyRegisterScreenState extends State<VerifyRegisterScreen> {
     );
   }
 
+  // Membersihkan controller saat widget di dispose
   @override
   void dispose() {
     _otpController.dispose();
